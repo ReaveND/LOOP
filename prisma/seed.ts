@@ -9,21 +9,43 @@ async function main() {
       name: "Demo Workspace",
 
       users: {
-        create: {
-          name: "Rupak",
-          email: "reaverrupak@gmail.com",
-          passwordHash: "password123", // We'll hash this later
-          role: UserRole.ADMIN,
+        create: [
+          {
+            name: "Rupak Sarkar",
+            email: "reaverrupak@gmail.com",
+            passwordHash: "password123", // We'll hash this later
+            role: UserRole.ADMIN,
+          },
+          {
+            name: "Srabani Kar",
+            email: "srabanikar02@gmail.com",
+            passwordHash: "password123",
+            role: UserRole.ANALYST,
+          },
+          {
+            name: "Bidusha Halder",
+            email: "bidushak098@gmail.com",
+            passwordHash: "password123",
+            role: UserRole.VIEWER,
+          },
+        ],
+      },
+    },
+
+    include: {
+      users: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
         },
       },
     },
-    include: {
-      users: true,
-    },
   });
 
-  console.log("✅ Workspace created successfully!");
-  console.log(workspace);
+  console.log("✅ Workspace and users created successfully!");
+  console.dir(workspace, { depth: null });
 }
 
 main()
