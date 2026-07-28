@@ -16,3 +16,9 @@ export class ConflictError extends AppError {
     super(message, 409);
   }
 }
+
+export class UnauthorizedError extends AppError {
+  constructor(message = "Invalid email or password.") {
+    super(message, 401);
+  }
+}

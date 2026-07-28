@@ -12,3 +12,11 @@ export type SignupResponse = {
     workspaceId: string;
   };
 };
+
+export type LoginResponse = {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  workspaceId: string;
+};
