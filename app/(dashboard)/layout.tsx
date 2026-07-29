@@ -11,13 +11,11 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
 
-  if (!session) {
-    redirect("/login");
-  }
+  const user = session!.user;
 
-  const workspace = session.user.workspaceId
+  const workspace = user.workspaceId
     ? await prisma.workspace.findUnique({
-        where: { id: session.user.workspaceId },
+        where: { id: user.workspaceId },
         select: { name: true },
       })
     : null;
@@ -26,7 +24,7 @@ export default async function DashboardLayout({
     <div className="flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        <TopNav user={session.user} workspaceName={workspace?.name} />
+        <TopNav user={user} workspaceName={workspace?.name} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 lg:p-8">
             {children}
