@@ -1,8 +1,11 @@
 import { prisma } from "../lib/db";
 import { UserRole } from "../lib/generated/prisma/client";
+import bcrypt from "bcryptjs";
 
 async function main() {
   console.log("🌱 Seeding database...");
+
+  const hashedPassword = await bcrypt.hash("password123", 12);
 
   const workspace = await prisma.workspace.create({
     data: {
@@ -13,19 +16,19 @@ async function main() {
           {
             name: "Rupak Sarkar",
             email: "reaverrupak@gmail.com",
-            passwordHash: "password123", // We'll hash this later
+            passwordHash: hashedPassword,
             role: UserRole.ADMIN,
           },
           {
             name: "Srabani Kar",
             email: "srabanikar02@gmail.com",
-            passwordHash: "password123",
+            passwordHash: hashedPassword,
             role: UserRole.ANALYST,
           },
           {
             name: "Bidusha Halder",
             email: "bidushak098@gmail.com",
-            passwordHash: "password123",
+            passwordHash: hashedPassword,
             role: UserRole.VIEWER,
           },
         ],
