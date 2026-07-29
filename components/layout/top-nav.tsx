@@ -12,22 +12,46 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+import { signOut } from 'next-auth/react';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export function TopNav() {
+interface TopNavProps {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+  };
+  workspaceName?: string | null;
+}
+
+export function TopNav({ user, workspaceName }: TopNavProps) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const getWorkspaceInitials = (name?: string | null) => {
+    if (!name) return 'WS';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.trim().slice(0, 2).toUpperCase();
+  };
+
+  const wsName = workspaceName || 'Demo Workspace';
+  const wsInitials = getWorkspaceInitials(wsName);
+  const wsDomain = `${wsName.toLowerCase().replace(/\s+/g, '')}.com`;
 
   return (
     <header className="sticky top-0 z-30 w-full bg-background border-b border-border">
@@ -70,44 +94,56 @@ export function TopNav() {
             </Button>
           )}
 
-          {/* Workspace Switcher */}
+          {/* Workspace Switcher / Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <button className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors">
+                <button className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-accent transition-colors cursor-pointer">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                    AC
+                    {wsInitials}
                   </div>
                   <ChevronDown className="w-4 h-4" />
                 </button>
               }
             />
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold">
-                WORKSPACES
-              </DropdownMenuLabel>
-              <DropdownMenuItem>
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                    AC
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold">
+                  WORKSPACES
+                </DropdownMenuLabel>
+                <DropdownMenuItem>
+                  <div className="flex items-center gap-2 w-full">
+                    <div className="w-6 h-6 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                      {wsInitials}
+                    </div>
+                    <div className="truncate">
+                      <div className="text-sm font-medium truncate">{wsName}</div>
+                      <div className="text-xs text-muted-foreground truncate">{wsDomain}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">Acme Corp</div>
-                    <div className="text-xs text-muted-foreground">acme.com</div>
-                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold">
+                  ACCOUNT
+                </DropdownMenuLabel>
+                <div className="px-2 py-1.5 flex flex-col gap-0.5">
+                  <div className="text-sm font-medium text-foreground">{user?.name || 'User'}</div>
+                  <div className="text-xs text-muted-foreground truncate">{user?.email || ''}</div>
                 </div>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground font-semibold">
-                ACCOUNT
-              </DropdownMenuLabel>
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem>Billing</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive cursor-pointer"
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
