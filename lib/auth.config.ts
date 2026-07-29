@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
   providers: [],
+  secret: process.env.AUTH_SECRET || "default_auth_secret_for_local_dev_only_1234567890",
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
