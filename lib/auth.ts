@@ -4,9 +4,11 @@ import Credentials from "next-auth/providers/credentials";
 import { loginSchema } from "@/lib/validations/auth";
 import { AuthService } from "@/lib/services/auth.service";
 import { UnauthorizedError } from "@/lib/errors";
+import { authConfig } from "@/lib/auth.config";
 
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   providers: [
     Credentials({
         async authorize(credentials) {
@@ -25,26 +27,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
     }),
   ],
-
-  callbacks: {
-    async jwt({ token, user }) {
-        if (user) {
-            token.id = user.id;
-            token.name = user.name;
-            token.email = user.email;
-            token.role = user.role;
-            token.workspaceId = user.workspaceId;
-        }
-
-        return token;
-    },
-
-    async session({ session, token }) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.workspaceId = token.workspaceId;
-
-        return session;
-    }
-  },
 });
