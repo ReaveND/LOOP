@@ -7,3 +7,16 @@ export interface FeedbackResponse {
   status: string;
   createdAt: Date;
 }
+
+export interface PaginationResponse {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface FeedbackListResponse {
+  data: FeedbackResponse[];
+  pagination: PaginationResponse;
+}
+

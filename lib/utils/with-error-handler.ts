@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { AppError } from "@/lib/errors";
 
-type RouteHandler = (request: Request) => Promise<Response>;
-
-export function withErrorHandler(handler: RouteHandler): RouteHandler {
-  return async (request: Request) => {
+export function withErrorHandler<T extends Request = Request>(
+  handler: (request: T) => Promise<Response>
+): (request: T) => Promise<Response> {
+  return async (request: T) => {
     try {
       return await handler(request);
     } catch (error) {
