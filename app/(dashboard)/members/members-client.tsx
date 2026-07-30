@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { TEAM_MEMBERS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +31,22 @@ import {
   Search,
   Mail,
   Trash2,
+  Loader2,
 } from 'lucide-react';
+
+export interface MemberItem {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  avatar: string;
+}
+
+interface MembersClientProps {
+  initialMembers: MemberItem[];
+  currentUserId: string;
+}
 
 function getStatusColor(status: string) {
   return status === 'Active'
@@ -40,36 +54,128 @@ function getStatusColor(status: string) {
     : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
 }
 
-export function MembersClient() {
+function formatRoleToDb(role: string) {
+  if (role === 'Editor') return 'ANALYST';
+  return role.toUpperCase();
+}
+
+function formatRoleFromDb(role: string) {
+  if (role === 'ANALYST') return 'Editor';
+  if (role === 'ADMIN') return 'Admin';
+  if (role === 'VIEWER') return 'Viewer';
+  return role;
+}
+
+export function MembersClient({ initialMembers, currentUserId }: MembersClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('Editor');
-  const [members, setMembers] = useState(TEAM_MEMBERS);
+  const [members, setMembers] = useState<MemberItem[]>(
+    initialMembers.map((m) => ({ ...m, role: formatRoleFromDb(m.role) }))
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const filteredMembers = members.filter((member) =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredMembers = members.filter(
+    (member) =>
+      member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      member.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleInviteMember = () => {
-    if (newMemberEmail) {
+  const handleInviteMember = async () => {
+    if (!newMemberEmail) return;
+    setIsLoading(true);
+    setErrorMessage('');
+
+    try {
+      const res = await fetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newMemberEmail,
+          name: newMemberName || undefined,
+          role: formatRoleToDb(newMemberRole),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to invite member');
+      }
+
+      const newMemberItem: MemberItem = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: formatRoleFromDb(data.role),
+        status: 'Active',
+        avatar: data.name
+          .split(' ')
+          .map((n: string) => n[0])
+          .join('')
+          .substring(0, 2)
+          .toUpperCase(),
+      };
+
+      setMembers((prev) => [...prev, newMemberItem]);
       setShowInviteDialog(false);
       setNewMemberEmail('');
+      setNewMemberName('');
       setNewMemberRole('Editor');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Error sending invitation');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRemoveMember = (id: number) => {
-    setMembers(members.filter((member) => member.id !== id));
+  const handleRemoveMember = async (id: string) => {
+    if (id === currentUserId) return;
+
+    try {
+      const res = await fetch(`/api/members/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.message || 'Failed to remove member');
+        return;
+      }
+
+      setMembers((prev) => prev.filter((member) => member.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleChangeRole = (id: number, newRole: string) => {
-    setMembers(
-      members.map((member) =>
-        member.id === id ? { ...member, role: newRole } : member
-      )
-    );
+  const handleChangeRole = async (id: string, displayRole: string) => {
+    const dbRole = formatRoleToDb(displayRole);
+
+    try {
+      const res = await fetch(`/api/members/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: dbRole }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.message || 'Failed to update role');
+        return;
+      }
+
+      setMembers((prev) =>
+        prev.map((member) =>
+          member.id === id ? { ...member, role: displayRole } : member
+        )
+      );
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -82,7 +188,10 @@ export function MembersClient() {
         </div>
         <Button
           className="bg-primary hover:bg-primary/90 gap-2"
-          onClick={() => setShowInviteDialog(true)}
+          onClick={() => {
+            setErrorMessage('');
+            setShowInviteDialog(true);
+          }}
         >
           <Plus className="w-4 h-4" />
           Invite Member
@@ -195,13 +304,15 @@ export function MembersClient() {
                         />
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleRemoveMember(member.id)}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remove Member
-                          </DropdownMenuItem>
+                          {member.id !== currentUserId && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleRemoveMember(member.id)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Remove Member
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -219,10 +330,27 @@ export function MembersClient() {
           <DialogHeader>
             <DialogTitle>Invite Team Member</DialogTitle>
             <DialogDescription>
-              Send an invitation to join your LOOP workspace
+              Add a new member to your LOOP workspace
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {errorMessage && (
+              <div className="p-3 text-sm rounded bg-red-500/10 text-red-500 border border-red-500/20">
+                {errorMessage}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2">
+                Name (Optional)
+              </label>
+              <Input
+                type="text"
+                placeholder="Full Name"
+                className="bg-muted/50 border-muted"
+                value={newMemberName}
+                onChange={(e) => setNewMemberName(e.target.value)}
+              />
+            </div>
             <div>
               <label className="text-sm font-medium text-foreground block mb-2">
                 Email Address
@@ -260,15 +388,17 @@ export function MembersClient() {
                 variant="outline"
                 className="flex-1"
                 onClick={() => setShowInviteDialog(false)}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button
                 className="flex-1 bg-primary"
                 onClick={handleInviteMember}
-                disabled={!newMemberEmail}
+                disabled={!newMemberEmail || isLoading}
               >
-                Send Invite
+                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Add Member
               </Button>
             </div>
           </div>

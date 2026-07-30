@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { AppError } from "@/lib/errors";
 
-export function withErrorHandler<T extends Request = Request>(
-  handler: (request: T) => Promise<Response>
-): (request: T) => Promise<Response> {
-  return async (request: T) => {
+export function withErrorHandler<T extends any[]>(
+  handler: (...args: T) => Promise<Response>
+): (...args: T) => Promise<Response> {
+  return async (...args: T) => {
     try {
-      return await handler(request);
+      return await handler(...args);
     } catch (error) {
       if (error instanceof AppError) {
         return NextResponse.json(
