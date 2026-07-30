@@ -5,6 +5,9 @@ export interface FeedbackResponse {
   customerLabel: string | null;
   sourceRef: string | null;
   status: string;
+  sentiment: string | null;
+  sentimentScore: number | null;
+  themes: string[];
   createdAt: Date;
 }
 

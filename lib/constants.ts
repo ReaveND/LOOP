@@ -28,13 +28,16 @@ export const SIDEBAR_ITEMS = [
     name: 'Members',
     href: '/members',
     icon: 'Users',
+    roles: ['ADMIN'],
   },
   {
     name: 'Settings',
     href: '/settings',
     icon: 'Settings',
+    roles: ['ADMIN', 'ANALYST'],
   },
 ];
+
 
 export const STAT_CARDS = [
   {

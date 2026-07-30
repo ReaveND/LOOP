@@ -27,7 +27,11 @@ const ICON_MAP: Record<string, React.ReactNode> = {
   Settings: <Settings className="w-5 h-5" />,
 };
 
-export function Sidebar() {
+interface SidebarProps {
+  userRole?: string | null;
+}
+
+export function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -35,6 +39,12 @@ export function Sidebar() {
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const visibleItems = SIDEBAR_ITEMS.filter((item) => {
+    if (!item.roles) return true;
+    if (!userRole) return false;
+    return item.roles.includes(userRole);
+  });
 
   // Prevent hydration mismatch by not rendering state-dependent content on first render
   if (!mounted) {
@@ -73,7 +83,7 @@ export function Sidebar() {
 
         {/* Navigation Items */}
         <nav className="flex-1 px-3 py-6 space-y-2 overflow-y-auto">
-          {SIDEBAR_ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href}>

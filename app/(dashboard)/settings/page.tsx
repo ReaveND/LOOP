@@ -1,3 +1,5 @@
+import { auth } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,7 +27,17 @@ export const metadata = {
   description: 'Manage workspace settings',
 };
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const session = await auth();
+
+  if (!session) {
+    redirect('/login');
+  }
+
+  if (session.user.role === 'VIEWER') {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="max-w-4xl space-y-8">
       {/* Header */}

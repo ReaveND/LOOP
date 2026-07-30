@@ -42,6 +42,9 @@ export class FeedbackService {
       customerLabel: feedback.customerLabel,
       sourceRef: feedback.externalReference,
       status: feedback.status,
+      sentiment: feedback.sentiment,
+      sentimentScore: feedback.sentimentScore,
+      themes: [],
       createdAt: feedback.createdAt,
     };
   }
@@ -85,6 +88,13 @@ export class FeedbackService {
       },
       skip,
       take: limit,
+      include: {
+        themes: {
+          include: {
+            theme: true,
+          },
+        },
+      },
     });
 
     const total = await prisma.feedback.count({
@@ -99,6 +109,9 @@ export class FeedbackService {
         customerLabel: item.customerLabel,
         sourceRef: item.externalReference,
         status: item.status,
+        sentiment: item.sentiment,
+        sentimentScore: item.sentimentScore,
+        themes: item.themes.map((ft) => ft.theme.name),
         createdAt: item.createdAt,
       })),
 
