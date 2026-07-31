@@ -66,9 +66,8 @@ enum Sentiment {
 
 enum FeedbackStatus {
   NEW
-  PROCESSING
-  ANALYZED
-  FAILED
+  REVIEWED
+  ACTIONED
 }
 
 model Feedback {

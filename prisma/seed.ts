@@ -278,7 +278,7 @@ async function main() {
   // 4. Generate 130 realistic Feedback items
   console.log("📝 Generating 130 realistic feedback entries across 60 days...");
   const channels = Object.values(FeedbackChannel);
-  const statuses = [FeedbackStatus.ANALYZED, FeedbackStatus.PROCESSING, FeedbackStatus.NEW];
+  const statuses = [FeedbackStatus.NEW, FeedbackStatus.REVIEWED, FeedbackStatus.ACTIONED];
   
   const now = new Date();
 

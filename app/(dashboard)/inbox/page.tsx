@@ -56,12 +56,10 @@ function getSentimentColor(sentiment: string | null) {
 
 function getStatusColor(status: string) {
   switch (status.toUpperCase()) {
-    case 'ANALYZED':
+    case 'ACTIONED':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case 'PROCESSING':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-    case 'FAILED':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    case 'REVIEWED':
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
     default: // NEW
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
   }
@@ -399,14 +397,11 @@ export default function InboxPage() {
                 <DropdownMenuItem onClick={() => { setStatusFilter('NEW'); setPage(1); }}>
                   New
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setStatusFilter('PROCESSING'); setPage(1); }}>
-                  Processing
+                <DropdownMenuItem onClick={() => { setStatusFilter('REVIEWED'); setPage(1); }}>
+                  Reviewed
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setStatusFilter('ANALYZED'); setPage(1); }}>
-                  Analyzed
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setStatusFilter('FAILED'); setPage(1); }}>
-                  Failed
+                <DropdownMenuItem onClick={() => { setStatusFilter('ACTIONED'); setPage(1); }}>
+                  Actioned
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
