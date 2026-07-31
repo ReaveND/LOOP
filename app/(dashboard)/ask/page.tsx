@@ -135,9 +135,9 @@ export default function AskLoopPage() {
                   <p className="whitespace-pre-wrap">{message.content}</p>
                   {message.sources && message.sources.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-white/20 flex flex-wrap gap-2">
-                      {message.sources.map((source) => (
+                      {message.sources.map((source, index) => (
                         <Badge
-                          key={source}
+                          key={index}
                           variant="secondary"
                           className="text-xs"
                         >

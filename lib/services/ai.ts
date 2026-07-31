@@ -5,7 +5,7 @@ export function getGroqClient() {
   return key ? new Groq({ apiKey: key }) : null;
 }
 
-export const MODEL_NAME = process.env.GROQ_MODEL_NAME || "llama-3.3-70b-versatile";
+export const MODEL_NAME = process.env.GROQ_MODEL_NAME || "openai/gpt-oss-120b";
 
 export interface ClassificationResult {
   sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
