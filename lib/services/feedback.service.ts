@@ -60,9 +60,21 @@ export class FeedbackService {
       status,
       sentiment,
       channel,
+      dateFrom,
+      dateTo,
+      themeId,
     } = query;
 
     const skip = (page - 1) * limit;
+
+    // Build date range filter
+    const createdAtFilter: { gte?: Date; lte?: Date } = {};
+    if (dateFrom) {
+      createdAtFilter.gte = new Date(dateFrom + "T00:00:00.000Z");
+    }
+    if (dateTo) {
+      createdAtFilter.lte = new Date(dateTo + "T23:59:59.999Z");
+    }
 
     const where: Prisma.FeedbackWhereInput = {
       workspaceId,
@@ -77,6 +89,17 @@ export class FeedbackService {
         content: {
           contains: search,
           mode: "insensitive",
+        },
+      }),
+
+      ...((dateFrom || dateTo) && {
+        createdAt: createdAtFilter,
+      }),
+
+      // Filter by theme via join table
+      ...(themeId && {
+        themes: {
+          some: { themeId },
         },
       }),
     };
@@ -123,4 +146,4 @@ export class FeedbackService {
       },
     };
   }
-}
+}
