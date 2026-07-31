@@ -99,18 +99,19 @@ export function FeedbackVolumeChart() {
         ) : (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.15)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis
                 dataKey="label"
-                stroke="currentColor"
-                tick={{ fontSize: 11 }}
+                stroke="#a1a1aa"
+                tick={{ fontSize: 11, fill: '#a1a1aa' }}
                 interval={1}
               />
-              <YAxis stroke="currentColor" allowDecimals={false} tick={{ fontSize: 11 }} />
+              <YAxis stroke="#a1a1aa" allowDecimals={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0,0,0,0.85)',
-                  border: 'none',
+                  backgroundColor: '#18181b',
+                  borderColor: '#27272a',
+                  color: '#f4f4f5',
                   borderRadius: '8px',
                   fontSize: '12px',
                 }}
@@ -121,10 +122,10 @@ export function FeedbackVolumeChart() {
                 type="monotone"
                 dataKey="value"
                 name="Feedback"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--primary))', r: 3 }}
-                activeDot={{ r: 5 }}
+                stroke="#6366f1"
+                strokeWidth={3}
+                dot={{ fill: '#6366f1', r: 4 }}
+                activeDot={{ r: 6, fill: '#818cf8' }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -254,13 +255,14 @@ export function ChannelDistribution() {
         ) : (
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.15)" horizontal={false} />
-              <XAxis type="number" stroke="currentColor" allowDecimals={false} tick={{ fontSize: 11 }} />
-              <YAxis dataKey="name" type="category" stroke="currentColor" tick={{ fontSize: 11 }} width={72} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" horizontal={false} />
+              <XAxis type="number" stroke="#a1a1aa" allowDecimals={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} />
+              <YAxis dataKey="name" type="category" stroke="#a1a1aa" tick={{ fontSize: 11, fill: '#a1a1aa' }} width={72} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0,0,0,0.85)',
-                  border: 'none',
+                  backgroundColor: '#18181b',
+                  borderColor: '#27272a',
+                  color: '#f4f4f5',
                   borderRadius: '8px',
                   fontSize: '12px',
                 }}

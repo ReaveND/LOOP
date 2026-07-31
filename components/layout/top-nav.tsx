@@ -10,6 +10,7 @@ import {
   ChevronDown,
   LogOut,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { signOut } from 'next-auth/react';
@@ -133,8 +134,12 @@ export function TopNav({ user, workspaceName }: TopNavProps) {
                   <div className="text-xs text-muted-foreground truncate">{user?.email || ''}</div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Billing</DropdownMenuItem>
+                <Link href="/profile">
+                  <DropdownMenuItem className="cursor-pointer">Profile</DropdownMenuItem>
+                </Link>
+                <Link href="/settings">
+                  <DropdownMenuItem className="cursor-pointer">Billing</DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
