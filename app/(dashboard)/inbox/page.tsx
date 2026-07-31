@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,16 +19,27 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Search,
   Filter,
-  MoreHorizontal,
   MessageCircle,
   X,
   Clock,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Upload,
+  Radio,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 
 function getSentimentColor(sentiment: string | null) {
@@ -55,6 +67,35 @@ function getStatusColor(status: string) {
   }
 }
 
+// Sample channel feedback items for simulation
+const SIMULATED_FEEDBACKS = [
+  {
+    content: "App store review: The checkout flow crashes when I try to select Google Pay as payment option.",
+    channel: "MOBILE_APP",
+    customerLabel: "AppStore User #4891",
+  },
+  {
+    content: "Support ticket: Dashboard analytics take more than 10 seconds to load during peak morning hours.",
+    channel: "EMAIL",
+    customerLabel: "TechCorp Customer Support",
+  },
+  {
+    content: "Website feedback: Loving the clean dark mode theme update! Makes nighttime reviews so much easier.",
+    channel: "WEBSITE",
+    customerLabel: "Jessica M. (Power User)",
+  },
+  {
+    content: "API feedback: Webhook delivery fails silently when payload exceeds 5MB size limit.",
+    channel: "API",
+    customerLabel: "Dev Team Partner Integration",
+  },
+  {
+    content: "CSAT Survey: Filter options are super responsive, but would love to export custom filtered views to PDF.",
+    channel: "WEBSITE",
+    customerLabel: "Enterprise Account Lead",
+  },
+];
+
 export default function InboxPage() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +106,17 @@ export default function InboxPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  // Ingest Dialog State
+  const [showIngestDialog, setShowIngestDialog] = useState(false);
+  const [ingestMode, setIngestMode] = useState<'single' | 'csv' | 'simulate'>('single');
+  const [singleContent, setSingleContent] = useState('');
+  const [singleChannel, setSingleChannel] = useState('WEBSITE');
+  const [singleCustomer, setSingleCustomer] = useState('');
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
+  const [ingestLoading, setIngestLoading] = useState(false);
+  const [ingestStatusMessage, setIngestStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fetchFeedbacks = async () => {
     setLoading(true);
@@ -95,7 +147,6 @@ export default function InboxPage() {
     fetchFeedbacks();
   }, [page, sentimentFilter, statusFilter]);
 
-  // Debounced/triggered search search execution
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
@@ -105,10 +156,148 @@ export default function InboxPage() {
   const handleClearSearch = () => {
     setSearchQuery('');
     setPage(1);
-    // Fetch immediately after clearing
     setTimeout(() => {
       fetchFeedbacks();
     }, 0);
+  };
+
+  // Submit Single Feedback
+  const handleSingleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!singleContent.trim()) return;
+
+    setIngestLoading(true);
+    setIngestStatusMessage(null);
+
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: singleContent.trim(),
+          channel: singleChannel,
+          customerLabel: singleCustomer.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to submit feedback');
+      }
+
+      setIngestStatusMessage({ type: 'success', text: 'Feedback successfully submitted!' });
+      setSingleContent('');
+      setSingleCustomer('');
+      setPage(1);
+      fetchFeedbacks();
+
+      setTimeout(() => {
+        setShowIngestDialog(false);
+        setIngestStatusMessage(null);
+      }, 1200);
+    } catch (err: any) {
+      setIngestStatusMessage({ type: 'error', text: err.message || 'Error submitting feedback' });
+    } finally {
+      setIngestLoading(false);
+    }
+  };
+
+  // Parse and Submit CSV
+  const handleCsvSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) return;
+
+    setIngestLoading(true);
+    setIngestStatusMessage(null);
+
+    try {
+      const text = await csvFile.text();
+      const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
+
+      if (lines.length === 0) {
+        throw new Error('CSV file is empty');
+      }
+
+      // Check header or parse lines (Content, Channel, Customer)
+      const parsedItems = lines.slice(1).map((line) => {
+        const parts = line.split(',');
+        const content = parts[0]?.replace(/^"|"$/g, '').trim() || line;
+        const channel = (parts[1]?.replace(/^"|"$/g, '').trim().toUpperCase() as any) || 'CSV';
+        const customerLabel = parts[2]?.replace(/^"|"$/g, '').trim() || 'CSV Import';
+
+        return { content, channel: ['WEBSITE', 'MOBILE_APP', 'EMAIL', 'API', 'CSV'].includes(channel) ? channel : 'CSV', customerLabel };
+      }).filter((item) => item.content.length > 0);
+
+      if (parsedItems.length === 0) {
+        throw new Error('No valid feedback items found in CSV');
+      }
+
+      const res = await fetch('/api/feedback/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsedItems),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to upload CSV');
+      }
+
+      setIngestStatusMessage({
+        type: 'success',
+        text: `CSV Imported: ${data.importedCount} items uploaded successfully!`,
+      });
+      setCsvFile(null);
+      setPage(1);
+      fetchFeedbacks();
+
+      setTimeout(() => {
+        setShowIngestDialog(false);
+        setIngestStatusMessage(null);
+      }, 1500);
+    } catch (err: any) {
+      setIngestStatusMessage({ type: 'error', text: err.message || 'Error processing CSV' });
+    } finally {
+      setIngestLoading(false);
+    }
+  };
+
+  // Simulate Channel Ingestion
+  const handleSimulateSubmit = async () => {
+    setIngestLoading(true);
+    setIngestStatusMessage(null);
+
+    try {
+      const res = await fetch('/api/feedback/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(SIMULATED_FEEDBACKS),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to simulate feedback');
+      }
+
+      setIngestStatusMessage({
+        type: 'success',
+        text: `Successfully ingested 5 simulated channel feedback items!`,
+      });
+      setPage(1);
+      fetchFeedbacks();
+
+      setTimeout(() => {
+        setShowIngestDialog(false);
+        setIngestStatusMessage(null);
+      }, 1500);
+    } catch (err: any) {
+      setIngestStatusMessage({ type: 'error', text: err.message || 'Error simulating feedback' });
+    } finally {
+      setIngestLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -133,6 +322,16 @@ export default function InboxPage() {
           <h1 className="text-3xl font-bold text-foreground">Feedback Inbox</h1>
           <p className="text-muted-foreground mt-1">Manage and review customer feedback ({totalItems} total)</p>
         </div>
+        <Button
+          className="bg-primary hover:bg-primary/90 gap-2"
+          onClick={() => {
+            setIngestStatusMessage(null);
+            setShowIngestDialog(true);
+          }}
+        >
+          <Plus className="w-4 h-4" />
+          Ingest Feedback
+        </Button>
       </div>
 
       {/* Filters */}
@@ -307,6 +506,148 @@ export default function InboxPage() {
           </Button>
         </div>
       )}
+
+      {/* Ingest Feedback Dialog */}
+      <Dialog open={showIngestDialog} onOpenChange={setShowIngestDialog}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Ingest Customer Feedback</DialogTitle>
+            <DialogDescription>
+              Add feedback manually, import CSV bulk records, or trigger simulated channel ingestion
+            </DialogDescription>
+          </DialogHeader>
+
+          {ingestStatusMessage && (
+            <div
+              className={`p-3 text-sm rounded flex items-center gap-2 ${
+                ingestStatusMessage.type === 'success'
+                  ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                  : 'bg-red-500/10 text-red-500 border border-red-500/20'
+              }`}
+            >
+              {ingestStatusMessage.type === 'success' && <CheckCircle2 className="w-4 h-4" />}
+              {ingestStatusMessage.text}
+            </div>
+          )}
+
+          <Tabs value={ingestMode} onValueChange={(val: any) => setIngestMode(val)} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="single">Single Entry</TabsTrigger>
+              <TabsTrigger value="csv">CSV Bulk Upload</TabsTrigger>
+              <TabsTrigger value="simulate">Simulate Channel</TabsTrigger>
+            </TabsList>
+
+            {/* Single Entry Tab */}
+            <TabsContent value="single" className="space-y-4 pt-3">
+              <form onSubmit={handleSingleSubmit} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-1">
+                    Feedback Content *
+                  </label>
+                  <Textarea
+                    placeholder="Enter customer feedback text..."
+                    rows={4}
+                    className="bg-muted/50 border-muted"
+                    value={singleContent}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setSingleContent(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1">
+                      Channel *
+                    </label>
+                    <Select value={singleChannel} onValueChange={(val) => val && setSingleChannel(val)}>
+                      <SelectTrigger className="bg-muted/50 border-muted">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="WEBSITE">Website</SelectItem>
+                        <SelectItem value="MOBILE_APP">Mobile App</SelectItem>
+                        <SelectItem value="EMAIL">Email</SelectItem>
+                        <SelectItem value="API">API</SelectItem>
+                        <SelectItem value="CSV">CSV</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground block mb-1">
+                      Customer Name / Label
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="e.g. Alex (Enterprise)"
+                      className="bg-muted/50 border-muted"
+                      value={singleCustomer}
+                      onChange={(e) => setSingleCustomer(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" type="button" onClick={() => setShowIngestDialog(false)} disabled={ingestLoading}>
+                    Cancel
+                  </Button>
+                  <Button className="bg-primary" type="submit" disabled={!singleContent.trim() || ingestLoading}>
+                    {ingestLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Submit Feedback
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+
+            {/* CSV Upload Tab */}
+            <TabsContent value="csv" className="space-y-4 pt-3">
+              <form onSubmit={handleCsvSubmit} className="space-y-4">
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center space-y-3">
+                  <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Select a .csv file to upload</p>
+                    <p className="text-xs text-muted-foreground mt-1">Expected columns: Content, Channel, CustomerLabel</p>
+                  </div>
+                  <Input
+                    type="file"
+                    accept=".csv"
+                    className="max-w-xs mx-auto bg-muted/50 cursor-pointer text-sm"
+                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" type="button" onClick={() => setShowIngestDialog(false)} disabled={ingestLoading}>
+                    Cancel
+                  </Button>
+                  <Button className="bg-primary" type="submit" disabled={!csvFile || ingestLoading}>
+                    {ingestLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Upload & Import CSV
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+
+            {/* Simulate Channel Tab */}
+            <TabsContent value="simulate" className="space-y-4 pt-3">
+              <div className="p-4 rounded-lg bg-muted/50 border border-border space-y-2">
+                <div className="flex items-center gap-2 font-medium text-foreground text-sm">
+                  <Radio className="w-4 h-4 text-primary animate-pulse" />
+                  Simulate Channel Integration Ingestion
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Triggers an automated simulation pull from channels (Mobile App Store reviews, Support Emails, API, Website Feedback) to ingest 5 realistic customer feedback entries.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" type="button" onClick={() => setShowIngestDialog(false)} disabled={ingestLoading}>
+                  Cancel
+                </Button>
+                <Button className="bg-primary gap-2" onClick={handleSimulateSubmit} disabled={ingestLoading}>
+                  {ingestLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Run Channel Simulation
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedFeedback} onOpenChange={() => setSelectedFeedback(null)}>

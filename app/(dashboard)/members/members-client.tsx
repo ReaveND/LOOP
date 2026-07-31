@@ -55,12 +55,11 @@ function getStatusColor(status: string) {
 }
 
 function formatRoleToDb(role: string) {
-  if (role === 'Editor') return 'ANALYST';
   return role.toUpperCase();
 }
 
 function formatRoleFromDb(role: string) {
-  if (role === 'ANALYST') return 'Editor';
+  if (role === 'ANALYST') return 'Analyst';
   if (role === 'ADMIN') return 'Admin';
   if (role === 'VIEWER') return 'Viewer';
   return role;
@@ -71,7 +70,7 @@ export function MembersClient({ initialMembers, currentUserId }: MembersClientPr
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberRole, setNewMemberRole] = useState('Editor');
+  const [newMemberRole, setNewMemberRole] = useState('Analyst');
   const [members, setMembers] = useState<MemberItem[]>(
     initialMembers.map((m) => ({ ...m, role: formatRoleFromDb(m.role) }))
   );
@@ -124,7 +123,7 @@ export function MembersClient({ initialMembers, currentUserId }: MembersClientPr
       setShowInviteDialog(false);
       setNewMemberEmail('');
       setNewMemberName('');
-      setNewMemberRole('Editor');
+      setNewMemberRole('Analyst');
     } catch (err: any) {
       setErrorMessage(err.message || 'Error sending invitation');
     } finally {
@@ -283,7 +282,7 @@ export function MembersClient({ initialMembers, currentUserId }: MembersClientPr
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Editor">Editor</SelectItem>
+                          <SelectItem value="Analyst">Analyst</SelectItem>
                           <SelectItem value="Viewer">Viewer</SelectItem>
                         </SelectContent>
                       </Select>
@@ -373,14 +372,14 @@ export function MembersClient({ initialMembers, currentUserId }: MembersClientPr
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Editor">Editor</SelectItem>
+                  <SelectItem value="Analyst">Analyst</SelectItem>
                   <SelectItem value="Viewer">Viewer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
               {newMemberRole === 'Admin' && '• Can manage members and all settings'}
-              {newMemberRole === 'Editor' && '• Can view and edit feedback and themes'}
+              {newMemberRole === 'Analyst' && '• Can view and edit feedback and themes'}
               {newMemberRole === 'Viewer' && '• Can only view reports and dashboards'}
             </div>
             <div className="flex gap-2 pt-4">
