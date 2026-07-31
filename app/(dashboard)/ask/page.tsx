@@ -60,17 +60,40 @@ export default function AskLoopPage() {
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const res = await fetch('/api/ask-loop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: content }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch AI response');
+      }
+
+      const data = await res.json();
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: `Based on your feedback data, here are some insights about "${content}":\n\n• The most mentioned aspect is performance optimization (342 mentions, +12.5% growth)\n• User experience improvements are the second priority (298 mentions, +8.3% growth)\n• Feature requests related to integrations are growing faster (5.2% growth)\n\nWould you like me to dive deeper into any of these areas?`,
-        sources: ['Dashboard Analytics', 'Feedback Inbox', 'Theme Trends'],
+        content: data.answer,
+        sources: data.citedItems?.map((item: any) => `[${item.channel}] ${item.content.slice(0, 40)}...`) || [],
       };
+
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: 'Sorry, I ran into an error connecting to Groq AI. Please check your network or try again.',
+        },
+      ]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

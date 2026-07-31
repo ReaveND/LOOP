@@ -22,36 +22,27 @@ export async function POST(req: NextRequest) {
     .toLowerCase()
     .replace(/[^\w\s]/gi, "")
     .split(/\s+/)
-    .filter((w) => w.length > 3 && !["what", "how", "why", "when", "where", "about", "that", "this", "users", "saying"].includes(w));
+    .filter((w) => w.length > 2 && !["what", "how", "why", "when", "where", "about", "that", "this", "users", "saying", "most", "are", "is", "the"].includes(w));
 
-  // Retrieve relevant workspace feedback items using keyword match or recent sample
-  const whereClause = queryTerms.length > 0
-    ? {
+  let relevantItems: Array<{
+    id: string;
+    content: string;
+    channel: string;
+    createdAt: Date;
+    sentiment: any;
+  }> = [];
+
+  let keywordItems: any[] = [];
+
+  if (queryTerms.length > 0) {
+    keywordItems = await prisma.feedback.findMany({
+      where: {
         workspaceId,
         OR: queryTerms.map((term) => ({
           content: { contains: term, mode: "insensitive" as const },
         })),
-      }
-    : { workspaceId };
-
-  let relevantItems = await prisma.feedback.findMany({
-    where: whereClause,
-    take: 10,
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      content: true,
-      channel: true,
-      createdAt: true,
-      sentiment: true,
-    },
-  });
-
-  // Fallback to top 10 items if keyword search returned zero
-  if (relevantItems.length === 0) {
-    relevantItems = await prisma.feedback.findMany({
-      where: { workspaceId },
-      take: 10,
+      },
+      take: 15,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -62,6 +53,27 @@ export async function POST(req: NextRequest) {
       },
     });
   }
+
+  // Always fetch a baseline of the 20 most recent items to guarantee rich context
+  const recentItems = await prisma.feedback.findMany({
+    where: { workspaceId },
+    take: 20,
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      content: true,
+      channel: true,
+      createdAt: true,
+      sentiment: true,
+    },
+  });
+
+  // Merge and deduplicate items by ID
+  const mergedMap = new Map();
+  keywordItems.forEach(item => mergedMap.set(item.id, item));
+  recentItems.forEach(item => mergedMap.set(item.id, item));
+  
+  relevantItems = Array.from(mergedMap.values()).slice(0, 30) as any[];
 
   // Generate grounded answer using Groq
   const result = await answerAskLoopWithGroq(question, relevantItems);

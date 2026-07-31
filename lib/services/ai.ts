@@ -1,12 +1,11 @@
 import Groq from "groq-sdk";
 
-const groqApiKey = process.env.GROQ_API_KEY;
+export function getGroqClient() {
+  const key = process.env.GROQ_API_KEY;
+  return key ? new Groq({ apiKey: key }) : null;
+}
 
-export const groq = groqApiKey
-  ? new Groq({ apiKey: groqApiKey })
-  : null;
-
-export const MODEL_NAME = "openai/gpt-oss-120b";
+export const MODEL_NAME = process.env.GROQ_MODEL_NAME || "llama-3.3-70b-versatile";
 
 export interface ClassificationResult {
   sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
@@ -21,8 +20,8 @@ export async function classifyFeedbackWithGroq(
   content: string,
   existingThemes: string[] = []
 ): Promise<ClassificationResult> {
-  // Mock / Fallback classification if GROQ_API_KEY is not set
-  if (!groq) {
+  const client = getGroqClient();
+  if (!client) {
     console.warn("GROQ_API_KEY not set. Using rule-based fallback classifier.");
     return fallbackClassify(content);
   }
@@ -42,7 +41,7 @@ Existing workspace themes to consider reusing if relevant: ${JSON.stringify(exis
 Output pure JSON with no extra commentary or markdown syntax wrappers.`;
 
   try {
-    const response = await groq.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: MODEL_NAME,
       messages: [
         { role: "system", content: systemPrompt },
@@ -81,7 +80,8 @@ export async function answerAskLoopWithGroq(
   question: string,
   contextItems: Array<{ id: string; content: string; channel: string; createdAt: Date | string }>
 ): Promise<{ answer: string; citedIds: string[] }> {
-  if (!groq) {
+  const client = getGroqClient();
+  if (!client) {
     return {
       answer: "GROQ_API_KEY is not configured. Here are matching feedback items from your search context.",
       citedIds: contextItems.slice(0, 3).map((item) => item.id),
@@ -93,20 +93,21 @@ export async function answerAskLoopWithGroq(
     .join("\n\n");
 
   const systemPrompt = `You are Ask LOOP, an AI assistant for customer feedback intelligence.
-Your task is to answer user questions strictly using the provided customer feedback items below.
+Your task is to answer user questions about customer feedback strictly using the provided customer feedback items below.
 
 Rules:
-1. Ground every statement directly in the provided feedback items. Do NOT invent or assume details.
-2. If the provided context does not contain enough information to answer the question, state: "Based on the feedback in your workspace, there is not enough information to answer this question."
-3. Include explicit references to the Item IDs used in your response in format [ID: <item_id>].
-4. Output valid JSON in this exact structure:
+1. Ground every analytical statement directly in the provided feedback items. Do NOT invent customer quotes or feedback metrics.
+2. If the user sends a greeting or general intro (e.g. "hello", "hi", "who are you"), reply warmly and offer to answer questions about customer feedback, themes, or sentiment.
+3. If the user asks a question about customer feedback but the provided context does not contain enough information to answer, state: "Based on the feedback in your workspace, there is not enough information to answer this question."
+4. Include explicit references to the Item IDs used in your response in format [ID: <item_id>] when citing data.
+5. Output valid JSON in this exact structure:
 {
-  "answer": "your detailed response here referencing [ID: xyz]",
-  "citedIds": ["item_id_1", "item_id_2"]
+  "answer": "your response here",
+  "citedIds": ["item_id_1"]
 }`;
 
   try {
-    const response = await groq.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: MODEL_NAME,
       messages: [
         { role: "system", content: systemPrompt },
