@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { AuthSessionProvider } from '@/components/auth-session-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -42,14 +43,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background" suppressHydrationWarning>
       <body className="antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <AuthSessionProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </ThemeProvider>
+        </AuthSessionProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
