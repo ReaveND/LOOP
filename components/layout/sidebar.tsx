@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { SIDEBAR_ITEMS } from '@/lib/constants';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,10 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 interface SidebarProps {
   userRole?: string | null;
+  workspaceName?: string;
 }
 
-export function Sidebar({ userRole }: SidebarProps) {
+export function Sidebar({ userRole, workspaceName = "Workspace" }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -68,16 +70,12 @@ export function Sidebar({ userRole }: SidebarProps) {
               isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100'
             }`}
           >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-[2px] shadow-lg flex-shrink-0">
-              <div className="w-full h-full bg-background/80 rounded-[14px] flex items-center justify-center backdrop-blur-sm">
-                <span className="font-bold text-transparent bg-clip-text bg-gradient-to-tr from-indigo-500 to-pink-500 text-lg">
-                  L
-                </span>
-              </div>
+            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+              <Image src="/loop_logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
             </div>
-            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sidebar-foreground to-sidebar-foreground/60 whitespace-nowrap">
-              LOOP
-            </span>
+            <div className="h-8 flex items-center">
+              <Image src="/loop_text.png" alt="LOOP" width={100} height={32} className="h-full w-auto object-contain" />
+            </div>
           </div>
           
           <Button
@@ -144,7 +142,7 @@ export function Sidebar({ userRole }: SidebarProps) {
                 Workspace
               </div>
               <div className="text-sm font-medium text-sidebar-foreground truncate">
-                LOOP Analytics
+                {workspaceName}
               </div>
             </div>
           </div>

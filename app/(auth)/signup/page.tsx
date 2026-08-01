@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -90,11 +91,13 @@ export default function SignupPage() {
       {/* Left Side - Illustration */}
       <div className="hidden lg:flex items-center justify-center p-8 bg-gradient-to-br from-primary/10 via-accent/10 to-transparent">
         <div className="max-w-md space-y-6 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent mx-auto flex items-center justify-center">
-            <span className="text-3xl font-bold text-white">L</span>
+          <div className="w-16 h-16 mx-auto flex items-center justify-center">
+            <Image src="/loop_logo.png" alt="Logo" width={64} height={64} className="w-full h-full object-contain" />
+          </div>
+          <div className="flex justify-center mb-2">
+            <Image src="/loop_text.png" alt="LOOP" width={150} height={48} className="h-12 w-auto object-contain" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">LOOP</h1>
             <p className="text-lg text-muted-foreground">
               Understand Your Customers Better
             </p>
@@ -126,11 +129,13 @@ export default function SignupPage() {
       <div className="flex items-center justify-center p-4 lg:p-8">
         <div className="w-full max-w-md space-y-6">
           {/* Logo - Mobile */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent mx-auto flex items-center justify-center mb-3">
-              <span className="text-xl font-bold text-white">L</span>
+          <div className="lg:hidden flex flex-col items-center justify-center mb-8">
+            <div className="w-12 h-12 mx-auto flex items-center justify-center mb-3">
+              <Image src="/loop_logo.png" alt="Logo" width={48} height={48} className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">LOOP</h1>
+            <div className="flex justify-center">
+              <Image src="/loop_text.png" alt="LOOP" width={120} height={32} className="h-8 w-auto object-contain" />
+            </div>
           </div>
 
           <Card className="border-border bg-card/50 backdrop-blur-sm shadow-lg">
