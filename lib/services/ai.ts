@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { z } from "zod";
 
+
 export function getGroqClient() {
   const key = process.env.GROQ_API_KEY;
   return key ? new Groq({ apiKey: key }) : null;
@@ -125,6 +126,105 @@ Rules:
       answer: "An error occurred while generating the answer with Groq. Please check your system logs.",
       citedIds: contextItems.slice(0, 3).map((i) => i.id),
     };
+  }
+}
+
+// -------------------------------------------------------------------
+// VoC Report Generation
+// -------------------------------------------------------------------
+
+export interface VoCReportStats {
+  periodStart: string;
+  periodEnd: string;
+  totalFeedback: number;
+  sentimentBreakdown: { positive: number; neutral: number; negative: number };
+  sentimentDelta: { positiveChange: number; negativeChange: number } | null;
+  topThemes: Array<{ name: string; count: number; growthRate: number }>;
+  verbatimQuotes: Array<{ content: string; channel: string; sentiment: string }>;
+}
+
+export async function generateVoCReportWithGroq(
+  stats: VoCReportStats
+): Promise<{
+  executiveSummary: string;
+  keyFindings: string[];
+  sentimentAnalysis: string;
+  topIssues: string[];
+  recommendedActions: string[];
+  conclusion: string;
+}> {
+  const client = getGroqClient();
+
+  const fallbackReport = {
+    executiveSummary: `This period (${stats.periodStart} to ${stats.periodEnd}) saw ${stats.totalFeedback} feedback items across your workspace. Sentiment breakdown: ${stats.sentimentBreakdown.positive} positive, ${stats.sentimentBreakdown.neutral} neutral, ${stats.sentimentBreakdown.negative} negative.`,
+    keyFindings: [
+      `${stats.totalFeedback} total feedback items analyzed for this period.`,
+      stats.topThemes[0] ? `Top theme: "${stats.topThemes[0].name}" with ${stats.topThemes[0].count} items.` : "No themes detected yet.",
+      `Negative feedback accounts for ${stats.totalFeedback > 0 ? Math.round((stats.sentimentBreakdown.negative / stats.totalFeedback) * 100) : 0}% of responses.`,
+    ],
+    sentimentAnalysis: `Customer sentiment is ${stats.sentimentBreakdown.positive >= stats.sentimentBreakdown.negative ? "predominantly positive" : "trending negative"} this period.`,
+    topIssues: stats.topThemes.slice(0, 3).map((t) => `${t.name}: ${t.count} feedback items`),
+    recommendedActions: [
+      `Investigate the top theme "${stats.topThemes[0]?.name ?? "feedback"}" to identify root causes.`,
+      "Schedule a team review of negative feedback items.",
+      "Follow up with customers who provided actionable suggestions.",
+    ],
+    conclusion: "Review the feedback details in the inbox for full context on each item.",
+  };
+
+  if (!client) {
+    return fallbackReport;
+  }
+
+  const statsText = `
+Period: ${stats.periodStart} to ${stats.periodEnd}
+Total feedback items: ${stats.totalFeedback}
+Sentiment breakdown:
+  - Positive: ${stats.sentimentBreakdown.positive} items
+  - Neutral: ${stats.sentimentBreakdown.neutral} items
+  - Negative: ${stats.sentimentBreakdown.negative} items
+${stats.sentimentDelta ? `Sentiment change vs prior period:\n  - Positive change: ${stats.sentimentDelta.positiveChange > 0 ? "+" : ""}${stats.sentimentDelta.positiveChange}%\n  - Negative change: ${stats.sentimentDelta.negativeChange > 0 ? "+" : ""}${stats.sentimentDelta.negativeChange}%` : ""}
+Top themes by volume:
+${stats.topThemes.map((t, i) => `  ${i + 1}. "${t.name}" — ${t.count} items (${t.growthRate > 0 ? "+" : ""}${t.growthRate}% vs prior period)`).join("\n")}
+Verbatim customer quotes:
+${stats.verbatimQuotes.map((q, i) => `  [${i + 1}] (${q.channel}, ${q.sentiment}): "${q.content}"`).join("\n")}`;
+
+  const systemPrompt = `You are a senior product analyst writing a professional Voice-of-Customer (VoC) report.
+You will be given pre-computed customer feedback statistics. Write a clear, evidence-backed report narrative around these exact numbers.
+Do NOT invent any figures or statistics — use only what is provided.
+Return ONLY valid JSON with this exact structure:
+{
+  "executiveSummary": "2-3 sentence summary of the period",
+  "keyFindings": ["finding 1", "finding 2", "finding 3", "finding 4"],
+  "sentimentAnalysis": "2-3 sentences analyzing the sentiment data provided",
+  "topIssues": ["issue 1", "issue 2", "issue 3"],
+  "recommendedActions": ["action 1", "action 2", "action 3"],
+  "conclusion": "1-2 sentence closing statement"
+}`;
+
+  try {
+    const response = await client.chat.completions.create({
+      model: MODEL_NAME,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Here are the pre-computed statistics for this period:\n${statsText}\n\nWrite the VoC report narrative based strictly on these numbers.` },
+      ],
+      temperature: 0.4,
+      response_format: { type: "json_object" },
+    });
+
+    const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
+    return {
+      executiveSummary: parsed.executiveSummary || fallbackReport.executiveSummary,
+      keyFindings: Array.isArray(parsed.keyFindings) ? parsed.keyFindings : fallbackReport.keyFindings,
+      sentimentAnalysis: parsed.sentimentAnalysis || fallbackReport.sentimentAnalysis,
+      topIssues: Array.isArray(parsed.topIssues) ? parsed.topIssues : fallbackReport.topIssues,
+      recommendedActions: Array.isArray(parsed.recommendedActions) ? parsed.recommendedActions : fallbackReport.recommendedActions,
+      conclusion: parsed.conclusion || fallbackReport.conclusion,
+    };
+  } catch (err) {
+    console.error("Error generating VoC report with Groq:", err);
+    return fallbackReport;
   }
 }
 
