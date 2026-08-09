@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { answerAskLoopWithGroq } from "@/lib/services/ai";
+import { generateEmbedding } from "@/lib/services/embedding.service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -16,33 +17,85 @@ export async function POST(req: NextRequest) {
   }
 
   const workspaceId = session.user.workspaceId;
+  let relevantItems: any[] = [];
 
-  // Extract key search terms for text filtering
-  const queryTerms = question
-    .toLowerCase()
-    .replace(/[^\w\s]/gi, "")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !["what", "how", "why", "when", "where", "about", "that", "this", "users", "saying", "most", "are", "is", "the"].includes(w));
+  try {
+    // 1. Generate an embedding for the question
+    const questionVector = await generateEmbedding(question);
+    const vectorString = `[${questionVector.join(",")}]`;
 
-  let relevantItems: Array<{
-    id: string;
-    content: string;
-    channel: string;
-    createdAt: Date;
-    sentiment: any;
-  }> = [];
+    // 2. Perform semantic search using pgvector
+    // Find the closest embeddings in the database using cosine distance (<=>)
+    const vectorResults = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT e."feedbackId", 1 - (e.vector <=> $1::vector) as similarity
+       FROM embeddings e
+       JOIN feedbacks f ON e."feedbackId" = f.id
+       WHERE f."workspaceId" = $2
+       ORDER BY e.vector <=> $1::vector
+       LIMIT 15`,
+      vectorString,
+      workspaceId
+    );
 
-  let keywordItems: any[] = [];
+    const feedbackIds = vectorResults.map((r) => r.feedbackId);
 
-  if (queryTerms.length > 0) {
-    keywordItems = await prisma.feedback.findMany({
-      where: {
-        workspaceId,
-        OR: queryTerms.map((term) => ({
-          content: { contains: term, mode: "insensitive" as const },
-        })),
-      },
-      take: 15,
+    // 3. Fetch full feedback records for the matching IDs
+    if (feedbackIds.length > 0) {
+      const dbItems = await prisma.feedback.findMany({
+        where: {
+          id: { in: feedbackIds },
+          workspaceId,
+        },
+        select: {
+          id: true,
+          content: true,
+          channel: true,
+          createdAt: true,
+          sentiment: true,
+        },
+      });
+
+      // Preserve order based on semantic similarity
+      relevantItems = feedbackIds
+        .map((id) => dbItems.find((item) => item.id === id))
+        .filter(Boolean);
+    }
+  } catch (error) {
+    console.warn("Vector search failed, falling back to text search.", error);
+  }
+
+  // Fallback / Baseline: If no vector results, use the original keyword search & recent items
+  if (relevantItems.length === 0) {
+    const queryTerms = question
+      .toLowerCase()
+      .replace(/[^\w\s]/gi, "")
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !["what", "how", "why", "when", "where", "about", "that", "this", "users", "saying", "most", "are", "is", "the"].includes(w));
+
+    let keywordItems: any[] = [];
+    if (queryTerms.length > 0) {
+      keywordItems = await prisma.feedback.findMany({
+        where: {
+          workspaceId,
+          OR: queryTerms.map((term) => ({
+            content: { contains: term, mode: "insensitive" as const },
+          })),
+        },
+        take: 15,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          content: true,
+          channel: true,
+          createdAt: true,
+          sentiment: true,
+        },
+      });
+    }
+
+    const recentItems = await prisma.feedback.findMany({
+      where: { workspaceId },
+      take: 20,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -52,28 +105,13 @@ export async function POST(req: NextRequest) {
         sentiment: true,
       },
     });
+
+    const mergedMap = new Map();
+    keywordItems.forEach(item => mergedMap.set(item.id, item));
+    recentItems.forEach(item => mergedMap.set(item.id, item));
+    
+    relevantItems = Array.from(mergedMap.values()).slice(0, 30);
   }
-
-  // Always fetch a baseline of the 20 most recent items to guarantee rich context
-  const recentItems = await prisma.feedback.findMany({
-    where: { workspaceId },
-    take: 20,
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      content: true,
-      channel: true,
-      createdAt: true,
-      sentiment: true,
-    },
-  });
-
-  // Merge and deduplicate items by ID
-  const mergedMap = new Map();
-  keywordItems.forEach(item => mergedMap.set(item.id, item));
-  recentItems.forEach(item => mergedMap.set(item.id, item));
-  
-  relevantItems = Array.from(mergedMap.values()).slice(0, 30) as any[];
 
   // Generate grounded answer using Groq
   const result = await answerAskLoopWithGroq(question, relevantItems);

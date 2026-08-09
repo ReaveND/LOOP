@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { z } from "zod";
 
 export function getGroqClient() {
   const key = process.env.GROQ_API_KEY;
@@ -7,14 +8,16 @@ export function getGroqClient() {
 
 export const MODEL_NAME = process.env.GROQ_MODEL_NAME || "openai/gpt-oss-120b";
 
-export interface ClassificationResult {
-  sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE";
-  sentimentScore: number; // -1.0 to 1.0
-  primaryTheme: string;
-  secondaryThemes: string[];
-  featureArea: string;
-  rationale: string;
-}
+export const classificationSchema = z.object({
+  sentiment: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE"]),
+  sentimentScore: z.number().min(-1.0).max(1.0),
+  primaryTheme: z.string().min(1),
+  secondaryThemes: z.array(z.string()).default([]),
+  featureArea: z.string().min(1),
+  rationale: z.string().min(1),
+});
+
+export type ClassificationResult = z.infer<typeof classificationSchema>;
 
 export async function classifyFeedbackWithGroq(
   content: string,
@@ -53,23 +56,14 @@ Output pure JSON with no extra commentary or markdown syntax wrappers.`;
 
     const responseText = response.choices[0]?.message?.content || "{}";
     const parsed = JSON.parse(responseText);
-
-    const sentiment = ["POSITIVE", "NEUTRAL", "NEGATIVE"].includes(parsed.sentiment?.toUpperCase())
-      ? (parsed.sentiment.toUpperCase() as "POSITIVE" | "NEUTRAL" | "NEGATIVE")
-      : "NEUTRAL";
-
-    const sentimentScore = typeof parsed.sentimentScore === "number"
-      ? Math.max(-1, Math.min(1, parsed.sentimentScore))
-      : sentiment === "POSITIVE" ? 0.7 : sentiment === "NEGATIVE" ? -0.7 : 0.0;
-
-    return {
-      sentiment,
-      sentimentScore,
-      primaryTheme: parsed.primaryTheme?.trim() || "General Feedback",
-      secondaryThemes: Array.isArray(parsed.secondaryThemes) ? parsed.secondaryThemes : [],
-      featureArea: parsed.featureArea?.trim() || "General",
-      rationale: parsed.rationale || "Auto-classified by Groq GPT OSS 120B",
-    };
+    const result = classificationSchema.safeParse(parsed);
+    
+    if (!result.success) {
+      console.warn("AI generated invalid JSON structure, falling back", result.error);
+      return fallbackClassify(content);
+    }
+    
+    return result.data;
   } catch (err) {
     console.error("Error in Groq classification call:", err);
     return fallbackClassify(content);

@@ -17,7 +17,8 @@ import {
   FeedbackListResponse
 } from "@/lib/types/feedback";
 
-
+import { processAutoClassification } from "./classify.service";
+import { processEmbedding } from "./embedding.service";
 
 export class FeedbackService {
   static async create(
@@ -34,6 +35,10 @@ export class FeedbackService {
         status: FeedbackStatus.NEW,
       },
     });
+
+    // Trigger AI classification and embeddings asynchronously
+    processAutoClassification(feedback.id, workspaceId).catch(console.error);
+    processEmbedding(feedback.id, workspaceId).catch(console.error);
 
     return {
       id: feedback.id,

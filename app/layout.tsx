@@ -9,21 +9,8 @@ export const metadata: Metadata = {
   description: 'Analyze customer feedback with AI-powered insights and themes. Understand what your customers really want.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/loop_logo.png',
+    apple: '/loop_logo.png',
   },
 }
 
