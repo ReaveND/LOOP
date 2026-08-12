@@ -44,6 +44,7 @@ export default function LandingPage() {
         <div className="mesh-layer mesh-a" />
         <div className="mesh-layer mesh-b" />
         <div className="mesh-layer mesh-c" />
+        <div className="mesh-layer mesh-d" />
         <div className="grid-lines" />
       </div>
 
@@ -456,7 +457,7 @@ export default function LandingPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         .lr {
           font-family: 'Inter', 'Geist', system-ui, -apple-system, sans-serif;
-          background: #050510;
+          background: radial-gradient(circle at 50% -10%, #08061a 0%, #050412 45%, #030309 100%);
           color: #ddddf0;
           overflow-x: hidden;
           position: relative;
@@ -468,43 +469,58 @@ export default function LandingPage() {
           inset: 0;
           pointer-events: none;
           z-index: 0;
+          overflow: hidden;
         }
         .mesh-layer {
           position: absolute;
           border-radius: 50%;
-          filter: blur(120px);
+          filter: blur(100px);
+          opacity: 0.85;
+          will-change: transform;
         }
         .mesh-a {
-          width: 700px; height: 700px;
-          background: radial-gradient(circle, rgba(124,110,245,0.12) 0%, transparent 70%);
-          top: -200px; left: -200px;
-          animation: meshFloat 20s ease-in-out infinite;
+          width: 900px; height: 900px;
+          background: radial-gradient(circle, rgba(124, 110, 245, 0.16) 0%, rgba(108, 95, 245, 0.05) 50%, transparent 75%);
+          top: -250px; left: -200px;
+          animation: meshFloat 18s ease-in-out infinite alternate;
         }
         .mesh-b {
-          width: 600px; height: 600px;
-          background: radial-gradient(circle, rgba(56,178,172,0.09) 0%, transparent 70%);
-          bottom: -100px; right: -100px;
-          animation: meshFloat 25s ease-in-out infinite reverse;
+          width: 800px; height: 800px;
+          background: radial-gradient(circle, rgba(45, 212, 191, 0.18) 0%, rgba(56, 178, 172, 0.06) 45%, transparent 75%);
+          bottom: -150px; right: -150px;
+          animation: meshFloat 22s ease-in-out infinite alternate-reverse;
         }
         .mesh-c {
-          width: 400px; height: 400px;
-          background: radial-gradient(circle, rgba(159,122,234,0.07) 0%, transparent 70%);
-          top: 50%; left: 50%;
+          width: 700px; height: 700px;
+          background: radial-gradient(circle, rgba(168, 85, 247, 0.11) 0%, rgba(124, 110, 245, 0.04) 50%, transparent 75%);
+          top: 35%; left: 45%;
           transform: translate(-50%, -50%);
-          animation: meshFloat 18s ease-in-out infinite 5s;
+          animation: meshPulse 16s ease-in-out infinite alternate;
+        }
+        .mesh-d {
+          width: 650px; height: 650px;
+          background: radial-gradient(circle, rgba(246, 173, 85, 0.22) 0%, rgba(237, 137, 54, 0.06) 50%, transparent 75%);
+          top: 70%; left: 10%;
+          animation: meshFloat 20s ease-in-out infinite alternate 3s;
         }
         .grid-lines {
           position: absolute;
           inset: 0;
           background-image:
-            linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-          background-size: 60px 60px;
+            linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+          background-size: 64px 64px;
+          mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 90%);
+          -webkit-mask-image: radial-gradient(ellipse at 50% 50%, black 40%, transparent 90%);
         }
         @keyframes meshFloat {
-          0%, 100% { transform: translate(0,0); }
-          33% { transform: translate(40px, -30px); }
-          66% { transform: translate(-30px, 40px); }
+          0% { transform: translate(0, 0) scale(1); }
+          50% { transform: translate(60px, -45px) scale(1.08); }
+          100% { transform: translate(-45px, 60px) scale(0.95); }
+        }
+        @keyframes meshPulse {
+          0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.7; }
+          100% { transform: translate(-45%, -55%) scale(1.15); opacity: 1; }
         }
 
         /* === NAVBAR === */
@@ -647,6 +663,9 @@ export default function LandingPage() {
           color: #f4f4ff;
         }
         .h1-accent {
+          display: inline-block;
+          padding-right: 0.25em;
+          margin-right: -0.2em;
           background: linear-gradient(120deg, #a99cf8 0%, #5ecfca 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
