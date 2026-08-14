@@ -124,15 +124,57 @@ export default function ReportsPage() {
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this report?')) return;
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<Report | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  async function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await fetch(`/api/reports/${id}`, { method: 'DELETE' });
-      setReports((prev) => prev.filter((r) => r.id !== id));
-    } catch {
-      // silently handle
+      const res = await fetch(`/api/reports/${deleteTarget.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error('Failed to delete report');
+      }
+      setReports((prev) => prev.filter((r) => r.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error('Failed to delete report:', err);
+    } finally {
+      setDeleteLoading(false);
     }
   }
+
+  // Export PDF state & handler (in-page printing without opening new tab)
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  function handleExport(reportId: string) {
+    setExportingId(reportId);
+
+    // Clean up previous print iframe if present
+    const existingIframe = document.getElementById('pdf-export-iframe');
+    if (existingIframe) {
+      existingIframe.remove();
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'pdf-export-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    iframe.src = `/reports/${reportId}?print=1`;
+
+    document.body.appendChild(iframe);
+
+    setTimeout(() => {
+      setExportingId(null);
+    }, 2500);
+  }
+
 
   return (
     <div className="space-y-8">
@@ -361,17 +403,25 @@ export default function ReportsPage() {
                           View
                         </Button>
                       </Link>
-                      <Link href={`/reports/${report.id}?print=1`} className="flex-1" target="_blank">
-                        <Button variant="outline" size="sm" className="w-full gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 gap-1"
+                        onClick={() => handleExport(report.id)}
+                        disabled={exportingId === report.id}
+                      >
+                        {exportingId === report.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
                           <Download className="w-3 h-3" />
-                          Export
-                        </Button>
-                      </Link>
+                        )}
+                        Export
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(report.id)}
+                        onClick={() => setDeleteTarget(report)}
                         title="Delete report"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -417,6 +467,57 @@ export default function ReportsPage() {
           )}
         </>
       )}
+
+      {/* Delete Report Confirmation Dialog Modal */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              Delete Report
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this report? This action is permanent and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteTarget && (
+            <div className="p-3 bg-muted/50 rounded-lg border border-border text-sm space-y-1">
+              <p className="font-medium text-foreground">{deleteTarget.title}</p>
+              <p className="text-xs text-muted-foreground">
+                Period: {formatPeriod(deleteTarget.periodStart, deleteTarget.periodEnd)}
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Report
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
