@@ -101,10 +101,22 @@ export class FeedbackService {
         createdAt: createdAtFilter,
       }),
 
-      // Filter by theme via join table
-      ...(themeId && {
+      // Filter by theme via join table (by ID or by theme name)
+      ...((themeId || (query as any).theme) && {
         themes: {
-          some: { themeId },
+          some: {
+            OR: [
+              { themeId: themeId || (query as any).theme },
+              {
+                theme: {
+                  name: {
+                    equals: themeId || (query as any).theme,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            ],
+          },
         },
       }),
     };

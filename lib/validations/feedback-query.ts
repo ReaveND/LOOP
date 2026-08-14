@@ -27,6 +27,9 @@ export const feedbackQuerySchema = z.object({
 
     /** Filter by theme id */
     themeId: z.string().optional(),
+
+    /** Filter by theme name */
+    theme: z.string().optional(),
 });
 
 export type FeedbackQuery =

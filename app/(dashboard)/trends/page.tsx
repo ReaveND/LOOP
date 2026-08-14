@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +14,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
-import { TrendingUp, AlertCircle, Zap, Loader2 } from 'lucide-react';
+import { TrendingUp, AlertCircle, Zap, Loader2, Check, PlusCircle, Share2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -38,10 +39,79 @@ function getSeverityText(growthRate: number) {
   return 'Low';
 }
 
+function getSentimentColor(sentiment: string | null) {
+  if (!sentiment) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border-transparent';
+  switch (sentiment.toUpperCase()) {
+    case 'POSITIVE':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-transparent';
+    case 'NEGATIVE':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-transparent';
+    case 'NEUTRAL':
+    default:
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-transparent';
+  }
+}
+
 export default function TrendsPage() {
+  const router = useRouter();
   const [themes, setThemes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTheme, setSelectedTheme] = useState<any | null>(null);
+  const [actioning, setActioning] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
+
+  const handleCreateActionItem = async () => {
+    if (!selectedTheme) return;
+    setActioning(true);
+    setActionNotice(null);
+
+    try {
+      const res = await fetch(`/api/themes/${selectedTheme.id}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'ACTIONED' }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setActionNotice(`Action item created! Batch-updated ${data.updatedCount ?? 0} feedback items to ACTIONED.`);
+        setTimeout(() => {
+          sessionStorage.setItem('inbox_themeFilter', JSON.stringify({
+            id: selectedTheme.id,
+            name: selectedTheme.name,
+          }));
+          router.push('/inbox');
+        }, 1200);
+      } else {
+        setActionNotice("Failed to create action item.");
+      }
+    } catch (err) {
+      setActionNotice("Failed to create action item.");
+    } finally {
+      setActioning(false);
+    }
+  };
+
+  const handleShareReport = async () => {
+    if (!selectedTheme) return;
+    setShareNotice(null);
+
+    const reportText = `📊 LOOP Theme Report: ${selectedTheme.name}
+• Total Items: ${selectedTheme.totalCount}
+• Recent Growth: ${selectedTheme.growthRate > 0 ? '+' : ''}${selectedTheme.growthRate}% (${getSeverityText(selectedTheme.growthRate)} Severity)
+
+Recent Customer Feedback:
+${selectedTheme.recentFeedback?.map((f: any) => `- "${f.content}" [${f.sentiment}]`).join('\n') || 'No recent feedback'}`;
+
+    try {
+      await navigator.clipboard.writeText(reportText);
+      setShareNotice("Theme report summary copied to clipboard!");
+      setTimeout(() => setShareNotice(null), 4000);
+    } catch (err) {
+      setShareNotice("Report ready! Copy failed.");
+    }
+  };
 
   useEffect(() => {
     async function loadThemes() {
@@ -170,18 +240,18 @@ export default function TrendsPage() {
 
       {/* Theme Detail Dialog */}
       <Dialog open={!!selectedTheme} onOpenChange={() => setSelectedTheme(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: selectedTheme?.color }} />
-              {selectedTheme?.name}
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedTheme?.color || '#3b82f6' }} />
+              <span>{selectedTheme?.name}</span>
             </DialogTitle>
             <DialogDescription>
               {selectedTheme?.totalCount} feedback items • Growth: {selectedTheme?.growthRate > 0 ? '+' : ''}{selectedTheme?.growthRate}%
             </DialogDescription>
           </DialogHeader>
           {selectedTheme && (
-            <div className="space-y-6">
+            <div className="space-y-6 min-w-0">
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="p-3 bg-muted/50 rounded-lg">
@@ -205,14 +275,16 @@ export default function TrendsPage() {
               </div>
 
               {/* Related Feedback */}
-              <div>
+              <div className="min-w-0">
                 <h3 className="text-sm font-medium text-foreground mb-3">Recent Related Feedback</h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {selectedTheme.recentFeedback?.length > 0 ? (
                     selectedTheme.recentFeedback.map((f: any) => (
-                      <div key={f.id} className="p-2 bg-muted/30 rounded text-sm text-foreground flex items-center justify-between">
-                         <span className="truncate mr-2">• {f.content}</span>
-                         <Badge variant="outline" className="text-[10px] uppercase">{f.sentiment}</Badge>
+                      <div key={f.id} className="p-2.5 bg-muted/30 hover:bg-muted/50 rounded-lg text-sm text-foreground flex items-center justify-between gap-3 min-w-0 transition-colors">
+                         <span className="truncate flex-1 min-w-0">• {f.content}</span>
+                         <Badge className={`text-[10px] uppercase shrink-0 font-semibold ${getSentimentColor(f.sentiment)}`}>
+                           {f.sentiment}
+                         </Badge>
                       </div>
                     ))
                   ) : (
@@ -221,11 +293,55 @@ export default function TrendsPage() {
                 </div>
               </div>
 
+              {actionNotice && (
+                <div className="p-3 text-xs bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 rounded-lg flex items-center gap-2 animate-in fade-in-50">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{actionNotice}</span>
+                </div>
+              )}
+
+              {shareNotice && (
+                <div className="p-3 text-xs bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg flex items-center gap-2 animate-in fade-in-50">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{shareNotice}</span>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex gap-2">
-                <Button className="flex-1 bg-primary">Create Action Item</Button>
-                <Button variant="outline" className="flex-1">
-                  Share Report
+                <Button
+                  className="flex-1 bg-primary gap-2"
+                  onClick={handleCreateActionItem}
+                  disabled={actioning}
+                >
+                  {actioning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle className="w-4 h-4" />
+                      Create Action Item
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={handleShareReport}
+                >
+                  {shareNotice ? (
+                    <>
+                      <Check className="w-4 h-4 text-green-500 dark:text-green-400" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-4 h-4" />
+                      Share Report
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

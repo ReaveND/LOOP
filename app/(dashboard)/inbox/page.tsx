@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -102,7 +102,7 @@ interface FeedbackItem {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function InboxPage() {
+function InboxContent() {
   const { data: session } = useSession();
   const userRole = (session?.user as any)?.role as string | undefined;
   const canEdit = userRole === 'ADMIN' || userRole === 'ANALYST';
@@ -116,14 +116,27 @@ export default function InboxPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [page, setPage] = useState(1);
 
+  // ── Read sessionStorage filter set by Trends page ──────────────────────────
+  const getInitialThemeFilter = () => {
+    try {
+      const raw = sessionStorage.getItem('inbox_themeFilter');
+      if (raw) {
+        sessionStorage.removeItem('inbox_themeFilter');
+        return JSON.parse(raw) as { id: string; name: string };
+      }
+    } catch {}
+    return null;
+  };
+  const initialTheme = getInitialThemeFilter();
+
   // Filter state
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!initialTheme);
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [channelFilter, setChannelFilter] = useState<string | null>(null);
-  const [themeFilter, setThemeFilter] = useState<string | null>(null);
-  const [themeFilterName, setThemeFilterName] = useState<string | null>(null);
+  const [themeFilter, setThemeFilter] = useState<string | null>(initialTheme?.id ?? null);
+  const [themeFilterName, setThemeFilterName] = useState<string | null>(initialTheme?.name ?? null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [themes, setThemes] = useState<Theme[]>([]);
@@ -157,8 +170,12 @@ export default function InboxPage() {
 
   // ── Fetch themes ───────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch('/api/themes').then((r) => r.json()).then(setThemes).catch(() => {});
+    fetch('/api/themes').then((r) => r.json()).then((res) => {
+      const data = res.data || res;
+      setThemes(Array.isArray(data) ? data : []);
+    }).catch(() => {});
   }, []);
+
 
   // ── Fetch feedbacks ────────────────────────────────────────────────────────
   const fetchFeedbacks = useCallback(async () => {
@@ -876,5 +893,13 @@ export default function InboxPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function InboxPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted-foreground text-center">Loading inbox...</div>}>
+      <InboxContent />
+    </Suspense>
   );
 }
