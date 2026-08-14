@@ -145,6 +145,7 @@ export interface VoCReportStats {
   sentimentDelta: { positiveChange: number; negativeChange: number } | null;
   topThemes: Array<{ name: string; count: number; growthRate: number }>;
   verbatimQuotes: Array<{ content: string; channel: string; sentiment: string }>;
+  targetThemeName?: string;
 }
 
 export async function generateVoCReportWithGroq(
@@ -159,21 +160,28 @@ export async function generateVoCReportWithGroq(
 }> {
   const client = getGroqClient();
 
+  const isThemeReport = Boolean(stats.targetThemeName);
+  const themeTitle = stats.targetThemeName ?? "General Workspace";
+
   const fallbackReport = {
-    executiveSummary: `This period (${stats.periodStart} to ${stats.periodEnd}) saw ${stats.totalFeedback} feedback items across your workspace. Sentiment breakdown: ${stats.sentimentBreakdown.positive} positive, ${stats.sentimentBreakdown.neutral} neutral, ${stats.sentimentBreakdown.negative} negative.`,
+    executiveSummary: isThemeReport
+      ? `This theme deep-dive report analyzes ${stats.totalFeedback} feedback items specifically for "${themeTitle}" (${stats.periodStart} to ${stats.periodEnd}). Sentiment breakdown: ${stats.sentimentBreakdown.positive} positive, ${stats.sentimentBreakdown.neutral} neutral, ${stats.sentimentBreakdown.negative} negative.`
+      : `This period (${stats.periodStart} to ${stats.periodEnd}) saw ${stats.totalFeedback} feedback items across your workspace. Sentiment breakdown: ${stats.sentimentBreakdown.positive} positive, ${stats.sentimentBreakdown.neutral} neutral, ${stats.sentimentBreakdown.negative} negative.`,
     keyFindings: [
-      `${stats.totalFeedback} total feedback items analyzed for this period.`,
-      stats.topThemes[0] ? `Top theme: "${stats.topThemes[0].name}" with ${stats.topThemes[0].count} items.` : "No themes detected yet.",
-      `Negative feedback accounts for ${stats.totalFeedback > 0 ? Math.round((stats.sentimentBreakdown.negative / stats.totalFeedback) * 100) : 0}% of responses.`,
+      `${stats.totalFeedback} feedback items analyzed for theme "${themeTitle}".`,
+      stats.topThemes[0] ? `Primary focus area: "${stats.topThemes[0].name}" with ${stats.topThemes[0].count} items.` : "No themes detected yet.",
+      `Negative feedback accounts for ${stats.totalFeedback > 0 ? Math.round((stats.sentimentBreakdown.negative / stats.totalFeedback) * 100) : 0}% of responses in this section.`,
     ],
-    sentimentAnalysis: `Customer sentiment is ${stats.sentimentBreakdown.positive >= stats.sentimentBreakdown.negative ? "predominantly positive" : "trending negative"} this period.`,
-    topIssues: stats.topThemes.slice(0, 3).map((t) => `${t.name}: ${t.count} feedback items`),
+    sentimentAnalysis: `Customer sentiment for "${themeTitle}" is ${stats.sentimentBreakdown.positive >= stats.sentimentBreakdown.negative ? "predominantly positive" : "trending negative"} this period.`,
+    topIssues: isThemeReport
+      ? [`${themeTitle} performance degradation & latency complaints`, `${themeTitle} usability pain points`]
+      : stats.topThemes.slice(0, 3).map((t) => `${t.name}: ${t.count} feedback items`),
     recommendedActions: [
-      `Investigate the top theme "${stats.topThemes[0]?.name ?? "feedback"}" to identify root causes.`,
-      "Schedule a team review of negative feedback items.",
-      "Follow up with customers who provided actionable suggestions.",
+      `Prioritize immediate investigation into "${themeTitle}" feedback to resolve key customer pain points.`,
+      `Review negative feedback entries for "${themeTitle}" with the engineering & product leads.`,
+      `Implement targeted fixes for "${themeTitle}" and monitor sentiment changes over the next 14 days.`,
     ],
-    conclusion: "Review the feedback details in the inbox for full context on each item.",
+    conclusion: `Addressing key complaints in "${themeTitle}" will significantly improve overall user satisfaction.`,
   };
 
   if (!client) {
@@ -181,24 +189,25 @@ export async function generateVoCReportWithGroq(
   }
 
   const statsText = `
+Report Focus: ${isThemeReport ? `Single Theme Deep-Dive for "${themeTitle}"` : "Workspace-Wide Voice of Customer Summary"}
 Period: ${stats.periodStart} to ${stats.periodEnd}
-Total feedback items: ${stats.totalFeedback}
-Sentiment breakdown:
+Total feedback items analyzed: ${stats.totalFeedback}
+Sentiment breakdown for this selection:
   - Positive: ${stats.sentimentBreakdown.positive} items
   - Neutral: ${stats.sentimentBreakdown.neutral} items
   - Negative: ${stats.sentimentBreakdown.negative} items
 ${stats.sentimentDelta ? `Sentiment change vs prior period:\n  - Positive change: ${stats.sentimentDelta.positiveChange > 0 ? "+" : ""}${stats.sentimentDelta.positiveChange}%\n  - Negative change: ${stats.sentimentDelta.negativeChange > 0 ? "+" : ""}${stats.sentimentDelta.negativeChange}%` : ""}
-Top themes by volume:
-${stats.topThemes.map((t, i) => `  ${i + 1}. "${t.name}" — ${t.count} items (${t.growthRate > 0 ? "+" : ""}${t.growthRate}% vs prior period)`).join("\n")}
+${isThemeReport ? `Focus Theme: "${themeTitle}"` : `Top themes by volume:\n${stats.topThemes.map((t, i) => `  ${i + 1}. "${t.name}" — ${t.count} items (${t.growthRate > 0 ? "+" : ""}${t.growthRate}% vs prior period)`).join("\n")}`}
 Verbatim customer quotes:
 ${stats.verbatimQuotes.map((q, i) => `  [${i + 1}] (${q.channel}, ${q.sentiment}): "${q.content}"`).join("\n")}`;
 
-  const systemPrompt = `You are a senior product analyst writing a professional Voice-of-Customer (VoC) report.
+  const systemPrompt = `You are a senior product analyst writing a professional ${isThemeReport ? `Theme Deep-Dive Analysis Report specifically focusing on "${themeTitle}"` : "Voice-of-Customer (VoC) Report"}.
 You will be given pre-computed customer feedback statistics. Write a clear, evidence-backed report narrative around these exact numbers.
+${isThemeReport ? `IMPORTANT: This report is specifically tailored for the "${themeTitle}" theme. Make sure all key findings, top issues, and recommended actions focus directly on resolving complaints and optimizing performance for "${themeTitle}".` : ""}
 Do NOT invent any figures or statistics — use only what is provided.
 Return ONLY valid JSON with this exact structure:
 {
-  "executiveSummary": "2-3 sentence summary of the period",
+  "executiveSummary": "2-3 sentence summary of the period and theme focus",
   "keyFindings": ["finding 1", "finding 2", "finding 3", "finding 4"],
   "sentimentAnalysis": "2-3 sentences analyzing the sentiment data provided",
   "topIssues": ["issue 1", "issue 2", "issue 3"],

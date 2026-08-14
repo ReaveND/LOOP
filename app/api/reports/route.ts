@@ -40,6 +40,8 @@ const createReportSchema = z.object({
   title: z.string().min(1).max(200),
   periodStart: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
   periodEnd: z.string().datetime({ offset: true }).or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  themeId: z.string().optional(),
+  themeName: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { title, periodStart: periodStartStr, periodEnd: periodEndStr } = parsed.data;
+    const { title, periodStart: periodStartStr, periodEnd: periodEndStr, themeId, themeName } = parsed.data;
 
     // Normalize to Date objects — handle both ISO and YYYY-MM-DD
     const periodStart = new Date(periodStartStr.includes("T") ? periodStartStr : `${periodStartStr}T00:00:00.000Z`);
@@ -70,12 +72,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const themeTarget = themeId || themeName;
+
     // ── Pre-compute statistics from real data ──────────────────────────────
-    // Current period feedback
+    // Current period feedback (optionally filtered by theme)
     const currentFeedback = await prisma.feedback.findMany({
       where: {
         workspaceId,
         createdAt: { gte: periodStart, lte: periodEnd },
+        ...(themeTarget && {
+          themes: {
+            some: {
+              OR: [
+                { themeId: themeTarget },
+                { theme: { name: { equals: themeTarget, mode: "insensitive" } } },
+              ],
+            },
+          },
+        }),
       },
       select: {
         id: true,
@@ -109,6 +123,16 @@ export async function POST(req: NextRequest) {
       where: {
         workspaceId,
         createdAt: { gte: priorStart, lte: priorEnd },
+        ...(themeTarget && {
+          themes: {
+            some: {
+              OR: [
+                { themeId: themeTarget },
+                { theme: { name: { equals: themeTarget, mode: "insensitive" } } },
+              ],
+            },
+          },
+        }),
       },
       select: { sentiment: true },
     });
@@ -190,6 +214,7 @@ export async function POST(req: NextRequest) {
       sentimentDelta,
       topThemes,
       verbatimQuotes,
+      ...(themeName && { targetThemeName: themeName }),
     };
 
     // ── Call AI to generate narrative ─────────────────────────────────────

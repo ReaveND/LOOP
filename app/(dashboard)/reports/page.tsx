@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,8 +59,10 @@ function formatPeriod(start: string, end: string) {
   return `${formatDate(start)} – ${formatDate(end)}`;
 }
 
-export default function ReportsPage() {
+function ReportsContent() {
+  const searchParams = useSearchParams();
   const [reports, setReports] = useState<Report[]>([]);
+  const [themes, setThemes] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,7 +75,31 @@ export default function ReportsPage() {
     title: '',
     periodStart: '',
     periodEnd: '',
+    themeName: 'ALL',
   });
+
+  useEffect(() => {
+    fetch('/api/themes')
+      .then((r) => r.json())
+      .then((res) => setThemes(res.data || []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('generate') === 'true' || searchParams.get('generate') === '1') {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const urlTheme = searchParams.get('theme') || searchParams.get('themeName') || 'ALL';
+
+      setGenForm({
+        title: urlTheme !== 'ALL' ? `${urlTheme} Theme Deep-Dive Report` : 'Weekly Voice of Customer Digest',
+        periodStart: sevenDaysAgo.toISOString().split('T')[0],
+        periodEnd: now.toISOString().split('T')[0],
+        themeName: urlTheme,
+      });
+      setShowGenerate(true);
+    }
+  }, [searchParams]);
 
   async function fetchReports() {
     try {
@@ -98,11 +125,18 @@ export default function ReportsPage() {
     setGenError(null);
     setGenSuccess(false);
 
+    const payload = {
+      title: genForm.title,
+      periodStart: genForm.periodStart,
+      periodEnd: genForm.periodEnd,
+      ...(genForm.themeName && genForm.themeName !== 'ALL' && { themeName: genForm.themeName }),
+    };
+
     try {
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(genForm),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -111,7 +145,7 @@ export default function ReportsPage() {
       }
 
       setGenSuccess(true);
-      setGenForm({ title: '', periodStart: '', periodEnd: '' });
+      setGenForm({ title: '', periodStart: '', periodEnd: '', themeName: 'ALL' });
       await fetchReports();
       setTimeout(() => {
         setShowGenerate(false);
@@ -216,6 +250,30 @@ export default function ReportsPage() {
             </div>
           ) : (
             <form onSubmit={handleGenerate} className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="report-scope">Report Scope / Focus</Label>
+                <select
+                  id="report-scope"
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring text-foreground"
+                  value={genForm.themeName}
+                  onChange={(e) => {
+                    const selTheme = e.target.value;
+                    setGenForm((f) => ({
+                      ...f,
+                      themeName: selTheme,
+                      title: selTheme !== 'ALL' ? `${selTheme} Theme Deep-Dive Report` : (f.title || 'Weekly Voice of Customer Digest'),
+                    }));
+                  }}
+                >
+                  <option value="ALL">All Themes (Workspace VoC Report)</option>
+                  {themes.map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name} Theme Deep-Dive
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="report-title">Report Title</Label>
                 <Input
@@ -519,5 +577,13 @@ export default function ReportsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted-foreground text-center">Loading reports...</div>}>
+      <ReportsContent />
+    </Suspense>
   );
 }

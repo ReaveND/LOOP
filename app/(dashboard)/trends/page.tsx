@@ -95,22 +95,7 @@ export default function TrendsPage() {
 
   const handleShareReport = async () => {
     if (!selectedTheme) return;
-    setShareNotice(null);
-
-    const reportText = `📊 LOOP Theme Report: ${selectedTheme.name}
-• Total Items: ${selectedTheme.totalCount}
-• Recent Growth: ${selectedTheme.growthRate > 0 ? '+' : ''}${selectedTheme.growthRate}% (${getSeverityText(selectedTheme.growthRate)} Severity)
-
-Recent Customer Feedback:
-${selectedTheme.recentFeedback?.map((f: any) => `- "${f.content}" [${f.sentiment}]`).join('\n') || 'No recent feedback'}`;
-
-    try {
-      await navigator.clipboard.writeText(reportText);
-      setShareNotice("Theme report summary copied to clipboard!");
-      setTimeout(() => setShareNotice(null), 4000);
-    } catch (err) {
-      setShareNotice("Report ready! Copy failed.");
-    }
+    router.push(`/reports?generate=true&theme=${encodeURIComponent(selectedTheme.name)}`);
   };
 
   useEffect(() => {
@@ -151,7 +136,10 @@ ${selectedTheme.recentFeedback?.map((f: any) => `- "${f.content}" [${f.sentiment
           <h1 className="text-3xl font-bold text-foreground">Theme Trends</h1>
           <p className="text-muted-foreground mt-1">Track emerging themes in customer feedback</p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 gap-2">
+        <Button
+          className="bg-primary hover:bg-primary/90 gap-2"
+          onClick={() => router.push('/reports?generate=true')}
+        >
           <Zap className="w-4 h-4" />
           Generate Report
         </Button>
