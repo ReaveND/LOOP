@@ -117,6 +117,7 @@ export default function InboxPage() {
   const [page, setPage] = useState(1);
 
   // Filter state
+  const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -393,82 +394,101 @@ export default function InboxPage() {
               )}
             </div>
             <Button type="submit" variant="secondary">Search</Button>
+            <Button
+              type="button"
+              variant={showFilters || hasActiveFilters ? 'secondary' : 'outline'}
+              onClick={() => setShowFilters((prev) => !prev)}
+              className="gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filters</span>
+              {hasActiveFilters && (
+                <Badge variant="default" className="ml-0.5 px-1.5 py-0 text-[10px] leading-tight bg-primary text-primary-foreground">
+                  Active
+                </Badge>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showFilters ? 'rotate-180' : ''}`} />
+            </Button>
           </form>
 
-          <div className="flex gap-2 flex-wrap items-center">
-            {/* Sentiment */}
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Filter className="w-3.5 h-3.5" />{sentimentFilter ? `Sentiment: ${sentimentFilter}` : 'Sentiment'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => { setSentimentFilter(null); setPage(1); }}>All Sentiments</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setSentimentFilter('POSITIVE'); setPage(1); }}>Positive</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setSentimentFilter('NEUTRAL'); setPage(1); }}>Neutral</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setSentimentFilter('NEGATIVE'); setPage(1); }}>Negative</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {showFilters && (
+            <div className="pt-2 space-y-4 border-t border-border/50">
+              <div className="flex gap-2 flex-wrap items-center">
+                {/* Sentiment */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Filter className="w-3.5 h-3.5" />{sentimentFilter ? `Sentiment: ${sentimentFilter}` : 'Sentiment'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => { setSentimentFilter(null); setPage(1); }}>All Sentiments</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setSentimentFilter('POSITIVE'); setPage(1); }}>Positive</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setSentimentFilter('NEUTRAL'); setPage(1); }}>Neutral</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setSentimentFilter('NEGATIVE'); setPage(1); }}>Negative</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-            {/* Status */}
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Filter className="w-3.5 h-3.5" />{statusFilter ? `Status: ${statusFilter}` : 'Status'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => { setStatusFilter(null); setPage(1); }}>All Statuses</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setStatusFilter('NEW'); setPage(1); }}>New</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setStatusFilter('REVIEWED'); setPage(1); }}>Reviewed</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setStatusFilter('ACTIONED'); setPage(1); }}>Actioned</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {/* Status */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Filter className="w-3.5 h-3.5" />{statusFilter ? `Status: ${statusFilter}` : 'Status'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => { setStatusFilter(null); setPage(1); }}>All Statuses</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setStatusFilter('NEW'); setPage(1); }}>New</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setStatusFilter('REVIEWED'); setPage(1); }}>Reviewed</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setStatusFilter('ACTIONED'); setPage(1); }}>Actioned</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-            {/* Channel */}
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Filter className="w-3.5 h-3.5" />{channelFilter ? `Channel: ${channelFilter}` : 'Channel'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={() => { setChannelFilter(null); setPage(1); }}>All Channels</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setChannelFilter('WEBSITE'); setPage(1); }}>Website</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setChannelFilter('MOBILE_APP'); setPage(1); }}>Mobile App</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setChannelFilter('EMAIL'); setPage(1); }}>Email</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setChannelFilter('API'); setPage(1); }}>API</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => { setChannelFilter('CSV'); setPage(1); }}>CSV</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                {/* Channel */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Filter className="w-3.5 h-3.5" />{channelFilter ? `Channel: ${channelFilter}` : 'Channel'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => { setChannelFilter(null); setPage(1); }}>All Channels</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setChannelFilter('WEBSITE'); setPage(1); }}>Website</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setChannelFilter('MOBILE_APP'); setPage(1); }}>Mobile App</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setChannelFilter('EMAIL'); setPage(1); }}>Email</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setChannelFilter('API'); setPage(1); }}>API</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setChannelFilter('CSV'); setPage(1); }}>CSV</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-            {/* Theme */}
-            {themes.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Tag className="w-3.5 h-3.5" />{themeFilterName ? `Theme: ${themeFilterName}` : 'Theme'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
-                <DropdownMenuContent align="start" className="max-h-52 overflow-y-auto">
-                  <DropdownMenuItem onClick={() => { setThemeFilter(null); setThemeFilterName(null); setPage(1); }}>All Themes</DropdownMenuItem>
-                  {themes.map((t) => (
-                    <DropdownMenuItem key={t.id} onClick={() => { setThemeFilter(t.id); setThemeFilterName(t.name); setPage(1); }}>{t.name}</DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                {/* Theme */}
+                {themes.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="outline" className="gap-2 h-9 text-sm"><Tag className="w-3.5 h-3.5" />{themeFilterName ? `Theme: ${themeFilterName}` : 'Theme'}<ChevronDown className="w-3.5 h-3.5 ml-1 opacity-60" /></Button>} />
+                    <DropdownMenuContent align="start" className="max-h-52 overflow-y-auto">
+                      <DropdownMenuItem onClick={() => { setThemeFilter(null); setThemeFilterName(null); setPage(1); }}>All Themes</DropdownMenuItem>
+                      {themes.map((t) => (
+                        <DropdownMenuItem key={t.id} onClick={() => { setThemeFilter(t.id); setThemeFilterName(t.name); setPage(1); }}>{t.name}</DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
-            {/* Date range */}
-            <div className="flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-muted-foreground" />
-              <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="h-9 text-sm bg-muted/50 w-[140px]" title="From date" />
-              <span className="text-muted-foreground text-sm">–</span>
-              <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="h-9 text-sm bg-muted/50 w-[140px]" title="To date" />
-            </div>
+                {/* Date range */}
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4 text-muted-foreground" />
+                  <Input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} className="h-9 text-sm bg-muted/50 w-[140px]" title="From date" />
+                  <span className="text-muted-foreground text-sm">–</span>
+                  <Input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} className="h-9 text-sm bg-muted/50 w-[140px]" title="To date" />
+                </div>
 
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-9 text-muted-foreground hover:text-foreground gap-1">
-                <X className="w-3.5 h-3.5" /> Clear filters
-              </Button>
-            )}
-          </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-9 text-muted-foreground hover:text-foreground gap-1">
+                    <X className="w-3.5 h-3.5" /> Clear filters
+                  </Button>
+                )}
+              </div>
 
-          {/* Active badges */}
-          {hasActiveFilters && (
-            <div className="flex gap-2 items-center flex-wrap">
-              <span className="text-xs text-muted-foreground">Active:</span>
-              {sentimentFilter && <Badge variant="secondary" className="gap-1 text-xs">Sentiment: {sentimentFilter}<button onClick={() => { setSentimentFilter(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
-              {statusFilter && <Badge variant="secondary" className="gap-1 text-xs">Status: {statusFilter}<button onClick={() => { setStatusFilter(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
-              {channelFilter && <Badge variant="secondary" className="gap-1 text-xs">Channel: {channelFilter}<button onClick={() => { setChannelFilter(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
-              {themeFilter && themeFilterName && <Badge variant="secondary" className="gap-1 text-xs">Theme: {themeFilterName}<button onClick={() => { setThemeFilter(null); setThemeFilterName(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
-              {dateFrom && <Badge variant="secondary" className="gap-1 text-xs">From: {dateFrom}<button onClick={() => { setDateFrom(''); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
-              {dateTo && <Badge variant="secondary" className="gap-1 text-xs">To: {dateTo}<button onClick={() => { setDateTo(''); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+              {/* Active badges */}
+              {hasActiveFilters && (
+                <div className="flex gap-2 items-center flex-wrap">
+                  <span className="text-xs text-muted-foreground">Active:</span>
+                  {sentimentFilter && <Badge variant="secondary" className="gap-1 text-xs">Sentiment: {sentimentFilter}<button onClick={() => { setSentimentFilter(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+                  {statusFilter && <Badge variant="secondary" className="gap-1 text-xs">Status: {statusFilter}<button onClick={() => { setStatusFilter(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+                  {channelFilter && <Badge variant="secondary" className="gap-1 text-xs">Channel: {channelFilter}<button onClick={() => { setChannelFilter(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+                  {themeFilter && themeFilterName && <Badge variant="secondary" className="gap-1 text-xs">Theme: {themeFilterName}<button onClick={() => { setThemeFilter(null); setThemeFilterName(null); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+                  {dateFrom && <Badge variant="secondary" className="gap-1 text-xs">From: {dateFrom}<button onClick={() => { setDateFrom(''); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+                  {dateTo && <Badge variant="secondary" className="gap-1 text-xs">To: {dateTo}<button onClick={() => { setDateTo(''); setPage(1); }}><X className="w-3 h-3" /></button></Badge>}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -568,26 +588,51 @@ export default function InboxPage() {
 
       {/* ── Edit Dialog ──────────────────────────────────────────────────────── */}
       <Dialog open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" /> Edit Feedback</DialogTitle>
-            <DialogDescription>Update the content, channel, or customer label for this feedback item.</DialogDescription>
-          </DialogHeader>
-          {editError && (
-            <div className="p-3 text-sm rounded bg-red-500/10 text-red-500 border border-red-500/20">{editError}</div>
-          )}
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-foreground block mb-1">Feedback Content *</label>
-              <Textarea rows={5} className="bg-muted/50 border-muted" value={editContent}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)} required />
+        <DialogContent className="max-w-xl p-6 sm:p-7 border border-border/80 bg-card/95 backdrop-blur-xl shadow-2xl rounded-2xl">
+          <DialogHeader className="space-y-1.5 pb-4 border-b border-border/40">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-sm">
+                <Pencil className="w-4 h-4" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-foreground tracking-tight">Edit Feedback</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  Update the content, channel, or customer label for this feedback item.
+                </DialogDescription>
+              </div>
             </div>
+          </DialogHeader>
+
+          {editError && (
+            <div className="p-3 text-xs rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 font-medium">
+              {editError}
+            </div>
+          )}
+
+          <form onSubmit={handleEditSubmit} className="space-y-5 pt-1">
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2 flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5 text-primary" /> Feedback Content <span className="text-red-400">*</span>
+              </label>
+              <Textarea
+                rows={5}
+                className="bg-muted/30 hover:bg-muted/50 focus:bg-background border-border/80 focus:border-primary/80 rounded-xl p-3.5 text-sm text-foreground transition-all duration-150 resize-none shadow-sm focus:ring-2 focus:ring-primary/20"
+                value={editContent}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)}
+                required
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground block mb-1">Channel *</label>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2 flex items-center gap-1.5">
+                  <Radio className="w-3.5 h-3.5 text-primary" /> Channel <span className="text-red-400">*</span>
+                </label>
                 <Select value={editChannel} onValueChange={(v) => v && setEditChannel(v)}>
-                  <SelectTrigger className="bg-muted/50 border-muted"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectTrigger className="bg-muted/30 hover:bg-muted/50 focus:bg-background border-border/80 rounded-xl h-10 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border border-border/80">
                     <SelectItem value="WEBSITE">Website</SelectItem>
                     <SelectItem value="MOBILE_APP">Mobile App</SelectItem>
                     <SelectItem value="EMAIL">Email</SelectItem>
@@ -596,15 +641,36 @@ export default function InboxPage() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div>
-                <label className="text-sm font-medium text-foreground block mb-1">Customer / Label</label>
-                <Input className="bg-muted/50 border-muted" placeholder="e.g. Alex (Enterprise)" value={editCustomer} onChange={(e) => setEditCustomer(e.target.value)} />
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-2 flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-primary" /> Customer / Label
+                </label>
+                <Input
+                  className="bg-muted/30 hover:bg-muted/50 focus:bg-background border-border/80 focus:border-primary/80 rounded-xl h-10 text-sm"
+                  placeholder="e.g. Alex (Enterprise)"
+                  value={editCustomer}
+                  onChange={(e) => setEditCustomer(e.target.value)}
+                />
               </div>
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" type="button" onClick={() => setEditTarget(null)} disabled={editLoading}>Cancel</Button>
-              <Button className="bg-primary" type="submit" disabled={!editContent.trim() || editLoading}>
-                {editLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save Changes
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => setEditTarget(null)}
+                disabled={editLoading}
+                className="rounded-xl px-5 h-10 text-muted-foreground hover:text-foreground font-medium"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="rounded-xl px-6 h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-md shadow-primary/20 transition-all gap-2"
+                type="submit"
+                disabled={!editContent.trim() || editLoading}
+              >
+                {editLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />} Save Changes
               </Button>
             </div>
           </form>
