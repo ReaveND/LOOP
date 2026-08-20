@@ -10,7 +10,7 @@ Built as part of the Zidio Development Internship Program — Web Development Tr
 
 ## 🚀 Live Demo
 
-**Deployed on Vercel**: [https://loop.vercel.app](https://loop.vercel.app) *(replace with your URL)*
+**Deployed on Vercel**: [https://loop-wifi.vercel.app](https://loop-wifi.vercel.app) 
 
 ### Demo Credentials
 
@@ -240,5 +240,3 @@ Set the same environment variables in your **Vercel project settings** (Settings
 | **Project Total** | **50 pts** | |
 
 ---
-
-*Built with ❤️ — Zidio Development Internship · Project LOOP v1.0*
