@@ -1,8 +1,4 @@
-import { pipeline, env } from "@xenova/transformers";
 import { prisma } from "@/lib/db";
-
-// Skip local model checks and use the remote ones to prevent issues in Vercel
-env.allowLocalModels = false;
 
 class EmbeddingPipeline {
   static task = "feature-extraction" as any;
@@ -11,6 +7,10 @@ class EmbeddingPipeline {
 
   static async getInstance() {
     if (this.instance === null) {
+      // Dynamic import so Vercel doesn't try to load this 100MB+ WASM library
+      // at module-init time (which crashes the serverless function)
+      const { pipeline, env } = await import("@xenova/transformers");
+      env.allowLocalModels = false;
       this.instance = await pipeline(this.task, this.model);
     }
     return this.instance;
