@@ -143,7 +143,7 @@ export function TopNav({ user, workspaceName }: TopNavProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
                   className="text-destructive cursor-pointer"
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={() => signOut({ callbackUrl: '/' })}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Sign Out

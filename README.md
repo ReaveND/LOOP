@@ -229,7 +229,7 @@ Set the same environment variables in your **Vercel project settings** (Settings
 
 ---
 
-## 📊 Scoring Rubric Summary
+<!-- ## 📊 Scoring Rubric Summary
 
 | Milestone | Weight | Status |
 |-----------|--------|--------|
@@ -239,4 +239,4 @@ Set the same environment variables in your **Vercel project settings** (Settings
 | M4 — Production (VoC report, polish, README, demo) | 10 pts | ✅ |
 | **Project Total** | **50 pts** | |
 
----
+--- -->
