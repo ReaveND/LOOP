@@ -356,7 +356,6 @@ export default function ReportDetailPage() {
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [printMode, setPrintMode] = useState(false);
   const hasPrinted = useRef(false);
 
   useEffect(() => {
@@ -371,36 +370,20 @@ export default function ReportDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  // Enter print mode automatically if ?print=1
+  // Auto-trigger window.print() if ?print=1
   useEffect(() => {
-    if (shouldPrint && report) {
-      setPrintMode(true);
+    if (shouldPrint && report && !hasPrinted.current) {
+      hasPrinted.current = true;
+      // Give the overlay a moment to fully render
+      const timer = setTimeout(() => {
+        window.print();
+      }, 600);
+      return () => clearTimeout(timer);
     }
   }, [shouldPrint, report]);
 
-  // Auto-trigger window.print() when printMode activates
-  useEffect(() => {
-    if (!printMode || !report) return;
-    if (hasPrinted.current) return;
-    hasPrinted.current = true;
-    // Give the overlay a moment to fully render
-    const timer = setTimeout(() => {
-      window.print();
-      // Exit print mode after the print dialog closes (if in normal page view)
-      const onAfterPrint = () => {
-        if (!shouldPrint) {
-          setPrintMode(false);
-          hasPrinted.current = false;
-        }
-      };
-      window.addEventListener('afterprint', onAfterPrint, { once: true });
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [printMode, report, shouldPrint]);
-
   const handlePrint = () => {
-    hasPrinted.current = false;
-    setPrintMode(true);
+    window.print();
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────
@@ -445,11 +428,10 @@ export default function ReportDetailPage() {
     <>
       {/*
         ── Print Mode Overlay ────────────────────────────────────────────────
-        When active, a fixed full-viewport white div covers the entire dashboard
-        layout (sidebar, topnav, etc.), so only the PDF content is visible and
-        prints cleanly. `visibility` trick ensures only #loop-pdf-root prints.
+        We always mount the PDF layout but hide it in the normal browser view.
+        The @media print CSS below overrides it to display it cleanly for printing.
       */}
-      {printMode && typeof document !== 'undefined' && createPortal(
+      {report && typeof document !== 'undefined' && createPortal(
         <>
           <style>{`
             @page {
@@ -459,13 +441,9 @@ export default function ReportDetailPage() {
             @media print {
               body > *:not(#loop-pdf-overlay) { display: none !important; }
               #loop-pdf-overlay {
-                position: relative !important;
-                inset: auto !important;
-                width: 100% !important;
-                height: auto !important;
                 display: block !important;
                 background: white !important;
-                overflow: visible !important;
+                width: 100% !important;
               }
               #loop-pdf-root {
                 width: 210mm !important;
@@ -473,19 +451,10 @@ export default function ReportDetailPage() {
               }
             }
           `}</style>
-          {/* Full-screen white cover that hides the dashboard chrome */}
+          {/* Container hidden on screen, visible on print */}
           <div
             id="loop-pdf-overlay"
-            style={{
-              position: 'fixed',
-              inset: 0,
-              zIndex: 99999,
-              background: 'white',
-              overflowY: 'auto',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-            }}
+            style={{ display: 'none' }}
           >
             <PdfLayout report={report} />
           </div>

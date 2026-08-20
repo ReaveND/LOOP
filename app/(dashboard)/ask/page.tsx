@@ -273,7 +273,7 @@ export default function AskLoopPage() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5.5rem)]">
+    <div className="flex flex-col h-[calc(100vh-8.5rem)] lg:h-[calc(100vh-9.5rem)] max-h-[calc(100vh-8.5rem)] lg:max-h-[calc(100vh-9.5rem)] overflow-hidden">
       {/* Minimal top bar */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border/60 shrink-0">
         <div className="flex items-center gap-2.5">
@@ -302,30 +302,30 @@ export default function AskLoopPage() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         {isEmpty ? (
           /* Empty state */
-          <div className="flex flex-col items-center justify-center h-full px-6 pb-8 gap-8">
-            <div className="text-center space-y-3 max-w-lg">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent mx-auto flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <Sparkles className="w-7 h-7" />
+          <div className="flex flex-col items-center justify-center min-h-full p-4 sm:p-6 gap-4 sm:gap-6 my-auto">
+            <div className="text-center space-y-2 max-w-lg">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-primary to-accent mx-auto flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
+                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground tracking-tight">How can I help?</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
+              <h2 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight">How can I help?</h2>
+              <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
                 Ask me anything about your customer feedback. I'll retrieve the most relevant items and give you grounded, accurate answers.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-3xl">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 w-full max-w-5xl">
               {PROMPT_CATEGORIES.map((cat) => {
                 const Icon = cat.icon;
                 return (
-                  <div key={cat.title} className="rounded-xl border border-border/70 bg-card p-4 space-y-3 hover:border-border transition-colors">
+                  <div key={cat.title} className="rounded-xl border border-border/70 bg-card p-3 sm:p-4 space-y-2 sm:space-y-3 hover:border-border transition-colors">
                     <div className="flex items-center gap-2">
                       <Icon className={`w-4 h-4 ${cat.color}`} />
                       <span className="text-xs font-semibold text-foreground">{cat.title}</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5 sm:space-y-1">
                       {cat.prompts.map((p) => (
                         <button
                           key={p}
@@ -342,7 +342,7 @@ export default function AskLoopPage() {
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8 w-full">
             {messages.map((message) => {
               const isAssistant = message.type === 'assistant';
               return (
@@ -467,7 +467,7 @@ export default function AskLoopPage() {
 
       {/* Follow-up chips — only when chatting */}
       {messages.length > 0 && !isLoading && (
-        <div className="max-w-3xl mx-auto w-full px-4 sm:px-6 pb-2 flex gap-2 overflow-x-auto scrollbar-none">
+        <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 pb-2 flex gap-2 overflow-x-auto scrollbar-none">
           {FOLLOW_UP_CHIPS.map((chip, i) => (
             <button
               key={i}
@@ -481,7 +481,7 @@ export default function AskLoopPage() {
       )}
 
       {/* Input area */}
-      <div className="shrink-0 max-w-3xl mx-auto w-full px-4 sm:px-6 pb-4 pt-2">
+      <div className="shrink-0 max-w-5xl mx-auto w-full px-4 sm:px-6 pb-0 pt-2">
         <div className="relative flex items-end gap-2 border border-border/80 rounded-2xl bg-card shadow-sm focus-within:border-primary/50 focus-within:shadow-md focus-within:shadow-primary/5 transition-all">
           <textarea
             ref={inputRef}
