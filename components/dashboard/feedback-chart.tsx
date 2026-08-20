@@ -179,14 +179,14 @@ export function SentimentDistribution() {
             No classified feedback yet.
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart margin={{ top: 10, bottom: 10 }}>
               <Pie
                 data={chartData}
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={80}
+                innerRadius={70}
+                outerRadius={110}
                 paddingAngle={2}
                 dataKey="value"
               >
@@ -205,8 +205,9 @@ export function SentimentDistribution() {
               />
               <Legend
                 iconType="circle"
-                iconSize={8}
-                formatter={(val) => <span style={{ fontSize: 11 }}>{val}</span>}
+                iconSize={12}
+                formatter={(val) => <span style={{ fontSize: 14 }}>{val}</span>}
+                wrapperStyle={{ paddingTop: '20px' }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -226,22 +227,22 @@ const CHANNEL_COLORS = [
   '#f97316',
 ];
 
-export function ChannelDistribution() {
+export function TopThemesChart() {
   const { data, loading, error } = useAnalytics();
 
   const chartData = data
-    ? data.channelData.map((d, i) => ({
-        name: d.name.replace('_', ' '),
-        value: d.value,
-        fill: CHANNEL_COLORS[i % CHANNEL_COLORS.length],
+    ? data.topThemes.map((d, i) => ({
+        name: d.name,
+        value: d.count,
+        fill: d.color || CHANNEL_COLORS[i % CHANNEL_COLORS.length],
       }))
     : [];
 
   return (
-    <Card className="border-border bg-card/50 backdrop-blur-sm">
+    <Card className="col-span-full border-border bg-card/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-base">Channel Distribution</CardTitle>
-        <CardDescription>Feedback sources breakdown</CardDescription>
+        <CardTitle className="text-base">Top Themes</CardTitle>
+        <CardDescription>Breakdown by volume</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -250,7 +251,7 @@ export function ChannelDistribution() {
           <ChartError msg={error} />
         ) : chartData.length === 0 ? (
           <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
-            No channel data yet.
+            No themes data yet.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={200}>
@@ -266,6 +267,7 @@ export function ChannelDistribution() {
                   borderRadius: '8px',
                   fontSize: '12px',
                 }}
+                itemStyle={{ color: '#f4f4f5' }}
                 formatter={(val) => [val, 'Items']}
               />
               <Bar dataKey="value" name="Feedback" radius={[0, 4, 4, 0]}>

@@ -5,7 +5,7 @@ import { StatCardsRow } from '@/components/dashboard/stat-card';
 import {
   FeedbackVolumeChart,
   SentimentDistribution,
-  ChannelDistribution,
+  TopThemesChart,
 } from '@/components/dashboard/feedback-chart';
 import { RecentFeedback } from '@/components/dashboard/recent-feedback';
 import { Button } from '@/components/ui/button';
@@ -99,7 +99,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <FeedbackVolumeChart />
         <SentimentDistribution />
-        <ChannelDistribution />
+        <TopThemesChart />
       </div>
 
       {/* Recent Feedback Table */}

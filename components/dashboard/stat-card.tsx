@@ -44,7 +44,7 @@ export function StatCardsRow() {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i} className="border-border bg-card/50 backdrop-blur-sm">
             <CardHeader className="pb-2">
@@ -96,7 +96,7 @@ export function StatCardsRow() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((card) => (
         <Card key={card.title} className="border-border bg-card/50 backdrop-blur-sm hover:bg-card/70 transition-colors">
           <CardHeader className="flex flex-row items-center justify-between pb-2">

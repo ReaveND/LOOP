@@ -36,6 +36,7 @@ interface SidebarProps {
 export function Sidebar({ userRole, workspaceName = "Workspace" }: SidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   React.useEffect(() => {
@@ -51,51 +52,26 @@ export function Sidebar({ userRole, workspaceName = "Workspace" }: SidebarProps)
   // Prevent hydration mismatch by not rendering state-dependent content on first render
   if (!mounted) {
     return (
-      <div className="hidden lg:flex flex-col h-[calc(100vh-2rem)] bg-sidebar/80 backdrop-blur-xl border border-sidebar-border/40 fixed left-4 top-4 w-64 rounded-[2rem] z-40 shadow-2xl" />
+      <div className="hidden lg:flex flex-col h-[calc(100vh-7rem)] bg-sidebar/80 backdrop-blur-xl border border-sidebar-border/40 fixed left-4 top-24 w-64 rounded-[2rem] z-40 shadow-2xl" />
     );
   }
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      {/* Sidebar Container */}
       <div
-        className={`hidden lg:flex flex-col h-[calc(100vh-2rem)] bg-sidebar/70 backdrop-blur-2xl border border-white/10 dark:border-white/5 fixed left-4 top-4 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`${
+          isMobileOpen ? 'flex' : 'hidden'
+        } lg:flex flex-col h-[calc(100vh-7rem)] bg-sidebar/95 lg:bg-sidebar/70 backdrop-blur-2xl border border-white/10 dark:border-white/5 fixed left-4 top-24 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCollapsed ? 'w-[5.5rem]' : 'w-72'
-        } rounded-[2rem] z-40 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] overflow-visible`}
+        } max-w-[calc(100vw-2rem)] rounded-[2rem] z-40 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] overflow-visible`}
       >
-        {/* Logo Area */}
-        <div className="flex items-center justify-between p-6 pb-4">
-          <div
-            className={`flex items-center gap-3 transition-opacity duration-300 ${
-              isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100'
-            }`}
-          >
-            <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
-              <Image src="/loop_logo.png" alt="Logo" width={40} height={40} className="w-full h-full object-contain" />
-            </div>
-            <div className="h-8 flex items-center">
-              <Image src="/loop_text.png" alt="LOOP" width={100} height={32} className="h-full w-auto object-contain" />
-            </div>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className={`text-sidebar-foreground hover:bg-sidebar-accent/80 transition-all duration-300 rounded-full h-10 w-10 flex-shrink-0 ${
-              isCollapsed ? 'mx-auto' : ''
-            }`}
-          >
-            <ChevronLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
-          </Button>
-        </div>
-
         {/* Navigation Items */}
-        <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto scrollbar-none">
+        <nav className="flex-1 px-3 pt-4 pb-0 space-y-0.5 overflow-y-auto scrollbar-none">
           {visibleItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
             return (
-              <Link key={item.href} href={item.href}>
+              <Link key={item.href} href={item.href} onClick={() => setIsMobileOpen(false)}>
                 <div
                   className={`group relative flex items-center p-3 my-1 rounded-2xl cursor-pointer transition-all duration-300 ease-out border ${
                     isActive
@@ -135,7 +111,7 @@ export function Sidebar({ userRole, workspaceName = "Workspace" }: SidebarProps)
         </nav>
 
         {/* Footer */}
-        <div className="p-6 pt-4 mt-auto">
+        <div className="p-4 pt-2 mt-auto shrink-0">
           <div className={`transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100'}`}>
             <div className="p-4 rounded-2xl bg-gradient-to-br from-sidebar-accent/50 to-transparent border border-sidebar-border/50">
               <div className="text-[11px] uppercase tracking-widest font-bold text-sidebar-foreground/50 mb-1">
@@ -150,11 +126,24 @@ export function Sidebar({ userRole, workspaceName = "Workspace" }: SidebarProps)
       </div>
 
       {/* Mobile Menu Button - shown at top */}
-      <div className="lg:hidden fixed top-4 left-4 z-40">
-        <Button variant="outline" size="icon" className="bg-background/80 backdrop-blur-md rounded-2xl shadow-lg border-sidebar-border/50 w-10 h-10">
-          <Menu className="w-5 h-5" />
+      <div className="lg:hidden fixed top-5 left-6 z-50">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="bg-background/95 backdrop-blur-md rounded-xl shadow-lg border-sidebar-border/50 w-10 h-10"
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+        >
+          <Menu className="w-5 h-5 text-foreground" />
         </Button>
       </div>
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-[2px] z-30" 
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
 
       {/* Main content offset */}
       <div className={`hidden lg:block ${isCollapsed ? 'ml-[6.5rem]' : 'ml-[19rem]'} transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]`} />

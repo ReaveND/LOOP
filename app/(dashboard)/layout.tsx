@@ -39,10 +39,10 @@ export default async function DashboardLayout({
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar userRole={user.role} workspaceName={dbUser.workspace.name} />
-      <div className="flex-1 flex flex-col">
-        <TopNav user={user} workspaceName={dbUser.workspace.name} />
+    <div className="flex flex-col min-h-screen bg-background">
+      <TopNav user={user} workspaceName={dbUser.workspace.name} />
+      <div className="flex-1 flex relative">
+        <Sidebar userRole={user.role} workspaceName={dbUser.workspace.name} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 lg:p-8">
             {children}
